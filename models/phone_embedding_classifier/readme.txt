@@ -1,0 +1,1 @@
+rnn embedding for the phoneme segments
