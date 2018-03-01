@@ -67,11 +67,11 @@ def embedding_classifier_tsne(filename_feature_teacher,
 
 if __name__ == '__main__':
 
-    filename_feature_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_test_teacher.pkl'
-    filename_list_key_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_teacher.pkl'
-    filename_feature_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_test_student.pkl'
-    filename_list_key_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_student.pkl'
-    filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
+    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_test_teacher.pkl'
+    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
+    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_test_student.pkl'
+    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
+    filename_scaler = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
 
     embedding_classifier_tsne(filename_feature_teacher,
                               filename_list_key_teacher,

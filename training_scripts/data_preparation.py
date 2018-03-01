@@ -194,7 +194,7 @@ def load_data_embedding_to_frame_level_teacher_student(list_feature, list_key, s
     array_feature_replicated = np.concatenate(array_feature_replicated)
     array_feature_replicated = featureReshape(array_feature_replicated, nlen=7)
 
-    return array_feature_replicated, np.array(array_labels)
+    return array_feature_replicated, np.array(array_labels), labels
 
 
 def cv5foldsIndices(list_feature_flatten, label_integer):

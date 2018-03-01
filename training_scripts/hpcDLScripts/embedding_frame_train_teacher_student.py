@@ -27,28 +27,30 @@ def main():
     if not os.path.isdir(tmp_folder):
         os.mkdir(tmp_folder)
 
-    filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
-    filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
-    filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
-    filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
-    filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
-
-    filename_train_validation_set = os.path.join(tmp_folder, 'feature_frame.h5')
-    filename_labels_train_validation_set = os.path.join(tmp_folder, 'labels.pkl')
-
-    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    # filename_feature_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
-    # filename_list_key_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_teacher.pkl'
-    # filename_feature_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
-    # filename_list_key_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_student.pkl'
-    # filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
+    # filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
+    # filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
+    # filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
+    # filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
+    # filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
     #
-    # filename_train_validation_set = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/temp/feature_frame.h5'
-    # filename_labels_train_validation_set = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/temp/labels.pkl'
+    # filename_train_validation_set = os.path.join(tmp_folder, 'feature_frame.h5')
+    # filename_labels_train_validation_set = os.path.join(tmp_folder, 'labels.pkl')
     #
-    # # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/temp/'
-    # path_model = '../../temp'
+    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+
+    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/temp/'
+    path_model = '../../temp'
+
+    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
+    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
+    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
+    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
+
+    filename_scaler = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
+
+    filename_train_validation_set = '../../temp/feature_frame.h5'
+    filename_labels_train_validation_set = '../../temp/labels.pkl'
 
     model_name = 'wide_frame_level_emb_teacher_student'
     input_dim = (80, 15)
@@ -61,13 +63,13 @@ def main():
     list_key_student = pickle.load(open(filename_list_key_student, 'rb'))
     scaler = pickle.load(open(filename_scaler, 'rb'))
 
-    array_feature_replicated_teacher, array_labels_teacher = \
+    array_feature_replicated_teacher, array_labels_teacher, labels_teacher = \
         load_data_embedding_to_frame_level_teacher_student(list_feature=list_feature_teacher,
                                                            list_key=list_key_teacher,
                                                            scaler=scaler,
                                                            data_str='_teacher')
 
-    array_feature_replicated_student, array_labels_student = \
+    array_feature_replicated_student, array_labels_student, labels_student = \
         load_data_embedding_to_frame_level_teacher_student(list_feature=list_feature_student,
                                                            list_key=list_key_student,
                                                            scaler=scaler,

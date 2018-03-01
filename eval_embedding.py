@@ -139,8 +139,8 @@ def embedding_siamese_ap(filename_feature, filename_list_key, filename_scaler, m
                             filename_list_key=filename_list_key,
                             filename_scaler=filename_scaler)
 
-    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phoneme_embedding_siamese_triplet'
-    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phoneme_embedding_siamese_triplet'
+    path_model = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/models/phoneme_embedding_siamese_triplet'
+    path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phoneme_embedding_siamese_triplet'
 
     list_ap = []
     embedding_dim = 29
@@ -279,11 +279,12 @@ def correlationDistanceMat():
 
 if __name__ == '__main__':
     # teacher test set
-    filename_feature = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_test.pkl'
-    filename_list_key = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key.pkl'
-    filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding.pkl'
+    filename_feature = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_test.pkl'
+    filename_list_key = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key.pkl'
+    filename_scaler = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding.pkl'
 
-    for model_name in ['phone_embedding_RNN_triplet_pairs_margin15_2']:
+    for model_name in ['phone_embedding_RNN_triplet_pairs_margin15',
+                       'phone_embedding_RNN_triplet_margin15_reverse_anchor']:
         embedding_siamese_ap(filename_feature, filename_list_key, filename_scaler, model_name)
 
     # correlationDistanceMat()

@@ -44,7 +44,7 @@ def main():
 
     # feature, label, scaler loading
     list_feature = pickle.load(open(filename_feature, 'rb'))
-    list_key = pickle.load(open(filename_list, 'rb'))
+    list_key = pickle.load(open(filename_list_key, 'rb'))
     scaler = pickle.load(open(filename_scaler, 'rb'))
 
     array_feature_replicated, array_labels = load_data_embedding_to_frame_level(list_feature=list_feature,

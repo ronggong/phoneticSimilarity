@@ -230,6 +230,43 @@ def generator_triplet_Ndiff(list_feature, labels, batch_size=1, shuffle=True, re
                 labels = labels[p] # labels is a numpy array
 
 
+def generator_triplet_Ndiff_yield_index(list_feature, labels, batch_size=1, shuffle=True, reverse_anchor=False, N_diff=5):
+    """triplet pairs generator, reverse anchor and same samples, N different samples"""
+    ii = 0
+    while True:
+        anchor = list_feature[ii]
+
+        # random select a same sample
+        idx_same = np.where(labels == labels[ii])[0]
+        idx_same = idx_same[idx_same != ii]
+        same = list_feature[idx_same[np.random.choice(len(idx_same), size=1)][0]]
+
+        # random select a diff sample
+        idx_diff = np.where(labels != labels[ii])[0]
+
+        if batch_size == 1:
+            idx_reverse = [0, 1] if reverse_anchor else [0]
+            for jj_reverse in idx_reverse:
+                for jj_ndiff in range(N_diff):
+                    diff = list_feature[idx_diff[np.random.choice(len(idx_diff), size=1)][0]]
+                    if jj_reverse == 0:
+                        yield [anchor, same, diff, jj_ndiff]
+                    elif jj_reverse == 1:
+                        yield [same, anchor, diff, jj_ndiff]
+                    else:
+                        pass
+        else:
+            raise ValueError
+
+        ii += 1
+
+        if ii >= len(list_feature):
+            ii = 0
+            if shuffle:
+                p = np.random.permutation(len(list_feature))
+                list_feature = [list_feature[ii_p] for ii_p in p]
+                labels = labels[p] # labels is a numpy array
+
 
 def calculate_num_idx_same_pairs(labels, num_class):
     """number and index of same pairs for each phone class"""

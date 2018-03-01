@@ -24,22 +24,22 @@ if __name__ == '__main__':
     input_shape = (batch_size, None, 80)
     patience=15
 
-    filename_feature = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train.pkl'
-    filename_list_key = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key.pkl'
-    filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding.pkl'
-    filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding.pkl'
-    filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits.pkl'
-
-    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    # filename_feature = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train.pkl'
-    # filename_list_key = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key.pkl'
-    # filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding.pkl'
-    # filename_label_encoder = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/le_phn_embedding.pkl'
-    # filename_data_splits = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/data_splits.pkl'
+    # filename_feature = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train.pkl'
+    # filename_list_key = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key.pkl'
+    # filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding.pkl'
+    # filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding.pkl'
+    # filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits.pkl'
     #
-    # # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
-    # path_model = '../../temp'
+    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    filename_feature = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train.pkl'
+    filename_list_key = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key.pkl'
+    filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding.pkl'
+    filename_label_encoder = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/le_phn_embedding.pkl'
+    filename_data_splits = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/data_splits.pkl'
+
+    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
+    path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = load_data_embedding(filename_feature=filename_feature,
                                                                              filename_list_key=filename_list_key,

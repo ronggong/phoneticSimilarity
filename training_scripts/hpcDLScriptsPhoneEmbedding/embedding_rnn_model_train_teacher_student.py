@@ -22,31 +22,31 @@ if __name__ == '__main__':
     output_shape = 54
     patience=15
 
-    filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
-    filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
-    filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
-    filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
-
-    filename_scaler_teacher_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
-
-    filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding_teacher_student.pkl'
-    filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits_teacher_student.pkl'
-
-    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-
-    # filename_feature_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
-    # filename_list_key_teacher = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_teacher.pkl'
-    # filename_feature_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
-    # filename_list_key_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_student.pkl'
+    # filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
+    # filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
+    # filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
+    # filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
     #
-    # filename_scaler_teacher_student = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
+    # filename_scaler_teacher_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
     #
-    # filename_label_encoder = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/le_phn_embedding_teacher_student.pkl'
-    # filename_data_splits = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/data_splits_teacher_student.pkl'
+    # filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding_teacher_student.pkl'
+    # filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits_teacher_student.pkl'
     #
-    # # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
-    # path_model = '../../temp'
+    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+
+    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
+    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
+    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
+    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
+
+    filename_scaler_teacher_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
+
+    filename_label_encoder = '/home/gong/Documents/MTG/dataset/phoneEmbedding/le_phn_embedding_teacher_student.pkl'
+    filename_data_splits = '/home/gong/Documents/MTG/dataset/phoneEmbedding/data_splits_teacher_student.pkl'
+
+    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
+    path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
     load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
