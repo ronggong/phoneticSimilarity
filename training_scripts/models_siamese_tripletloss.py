@@ -3,7 +3,7 @@ from keras.models import Model
 from keras.models import save_model
 from keras.layers import Dropout
 from keras.layers import LSTM
-# from keras.layers import CuDNNLSTM
+from keras.layers import CuDNNLSTM
 from keras.layers import Bidirectional
 from keras.layers import Dense
 from keras import backend as K
@@ -20,7 +20,7 @@ from feature_generator import generator_triplet_pairs
 
 from data_preparation import writeValLossCsv
 from losses import triplet_loss
-# from tensorflow.python.client import device_lib
+from tensorflow.python.client import device_lib
 
 
 
@@ -71,15 +71,18 @@ def embedding_siamese_1_lstm_1_dense(input_shape):
 
 
 def embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape):
+    device = device_lib.list_local_devices()[0].device_type
+
     # embedding base model
     base_input = Input(batch_shape=input_shape)
 
-    # if device == 'CPU':
-    x = Bidirectional(LSTM(units=32, return_sequences=True))(base_input)
-    x = Bidirectional(LSTM(units=32, return_sequences=False))(x)
+    if device == 'CPU':
+        x = Bidirectional(LSTM(units=32, return_sequences=True))(base_input)
+        x = Bidirectional(LSTM(units=32, return_sequences=False))(x)
 
-    # else:
-    #     x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(base_input)
+    else:
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(base_input)
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(x)
 
     x = Dense(units=64, activation='relu')(x)
 
@@ -108,7 +111,7 @@ def embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape):
 
 def embedding_siamese_2_lstm_1_dense_model_compile(input_shape, output_shape, margin):
     """use keras compile"""
-    # device = device_lib.list_local_devices()[0].device_type
+
     embedding_model, triplet_model, outputs = embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape)
 
     triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=margin)))

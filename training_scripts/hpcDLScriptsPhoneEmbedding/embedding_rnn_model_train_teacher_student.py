@@ -1,7 +1,9 @@
 """
 train the lstm classifier embedding
 """
-import sys, os
+import sys
+import os
+import pickle
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = str(1)
 
@@ -13,47 +15,54 @@ from data_preparation import load_data_embedding_teacher_student
 from keras.utils import to_categorical
 from models_RNN import train_embedding_RNN_batch
 from parameters import config_select
-import pickle
 
 if __name__ == '__main__':
 
-    batch_size=64
+    batch_size = 64
     input_shape = (batch_size, None, 80)
-    output_shape = 54
-    patience=15
+    output_shape = 2
+    patience = 15
 
-    # filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
-    # filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
-    # filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
-    # filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
+    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
+
+    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+
+    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/Users/ronggong/Documents_using/MTG document/dataset/phoneEmbedding'
     #
-    # filename_scaler_teacher_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
+    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
     #
-    # filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding_teacher_student.pkl'
-    # filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits_teacher_student.pkl'
+    # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
     #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-
-    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
-    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
-    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
-    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
-
-    filename_scaler_teacher_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
-
-    filename_label_encoder = '/home/gong/Documents/MTG/dataset/phoneEmbedding/le_phn_embedding_teacher_student.pkl'
-    filename_data_splits = '/home/gong/Documents/MTG/dataset/phoneEmbedding/data_splits_teacher_student.pkl'
-
-    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
-    path_model = '../../temp'
+    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+    #
+    # path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
-    load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
-                                        filename_list_key_teacher=filename_list_key_teacher,
-                                        filename_feature_student=filename_feature_student,
-                                        filename_list_key_student=filename_list_key_student,
-                                        filename_scaler=filename_scaler_teacher_student)
+                load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
+                                                    filename_list_key_teacher=filename_list_key_teacher,
+                                                    filename_feature_student=filename_feature_student,
+                                                    filename_list_key_student=filename_list_key_student,
+                                                    filename_scaler=filename_scaler_teacher_student)
+
+    if output_shape == 2:
+        labels = le.inverse_transform(labels_integer)
+        indices_teacher = [i for i, s in enumerate(labels) if 'teacher' in s]
+        indices_student = [i for i, s in enumerate(labels) if 'student' in s]
+        labels_integer[indices_teacher] = 0
+        labels_integer[indices_student] = 1
 
     # split folds
     # folds5_split_indices = cv5foldsIndices(list_feature_flatten=list_feature_flatten, label_integer=labels_integer)
@@ -74,6 +83,9 @@ if __name__ == '__main__':
 
         model_name = config_select(config=config)
 
+        if output_shape == 2:
+            model_name += '_2_class'
+
         for ii in range(5):
             file_path_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
             file_path_log = os.path.join(path_model, 'log', model_name + '_teacher_student' + '_' + str(ii) + '.csv')
@@ -86,8 +98,8 @@ if __name__ == '__main__':
             labels_integer_fold_val = labels_integer[val_index]
             labels_fold_val = to_categorical(labels_integer_fold_val)
 
-            print(len(list_feature_fold_train), len(labels_fold_train))
-            print(len(list_feature_fold_val), len(labels_fold_val))
+            # print(len(list_feature_fold_train), len(labels_fold_train))
+            # print(len(list_feature_fold_val), len(labels_fold_val))
 
             train_embedding_RNN_batch(list_feature_fold_train=list_feature_fold_train,
                                       labels_fold_train=labels_fold_train,
@@ -100,7 +112,6 @@ if __name__ == '__main__':
                                       filename_log=file_path_log,
                                       patience=patience,
                                       config=config)
-
 
         # train_embedding_RNN(X_train=X_train,
         #                     X_val=X_val,

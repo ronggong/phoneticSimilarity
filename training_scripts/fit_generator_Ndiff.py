@@ -10,6 +10,49 @@ from losses import triplet_loss
 from losses import triplet_loss_no_mean
 
 
+def get_maximum_length(batch_size, generator_output, index):
+    """
+    retrieve the maximum sequence length of each batch
+    :param batch_size:
+    :param generator_output: [[N_diff samples], ...], N_diff samples is [[anchor_0, same_0, diff_0], ...]
+    :param index: array
+    :return:
+    """
+    # get the maximum sequence length
+    len_anchor_max, len_same_max, len_diff_max = 0, 0, 0
+    for ii_sample in range(batch_size):
+        gen_out_sample = generator_output[ii_sample][index[ii_sample]]
+        if gen_out_sample[0].shape[1] > len_anchor_max: len_anchor_max = gen_out_sample[0].shape[1]
+        if gen_out_sample[1].shape[1] > len_same_max: len_same_max = gen_out_sample[1].shape[1]
+        if gen_out_sample[2].shape[1] > len_diff_max: len_diff_max = gen_out_sample[2].shape[1]
+
+    return len_anchor_max, len_same_max, len_diff_max
+
+
+def make_same_length_batch(batch_size, len_anchor_max, len_same_max, len_diff_max, generator_output, index):
+    """
+    make the input matrix with the maximum length
+    :param batch_size:
+    :param len_anchor_max:
+    :param len_same_max:
+    :param len_diff_max:
+    :param generator_output: [[N_diff samples], ...], N_diff samples is [[anchor_0, same_0, diff_0], ...]
+    :param index: array
+    :return:
+    """
+    # padding
+    input_anchor = np.zeros((batch_size, len_anchor_max, 80), dtype=np.float32)
+    input_same = np.zeros((batch_size, len_same_max, 80), dtype=np.float32)
+    input_diff = np.zeros((batch_size, len_diff_max, 80), dtype=np.float32)
+    for ii_sample in range(batch_size):
+        gen_out_sample = generator_output[ii_sample][index[ii_sample]]
+        input_anchor[ii_sample, :gen_out_sample[0].shape[1], :] = gen_out_sample[0]
+        input_same[ii_sample, :gen_out_sample[1].shape[1], :] = gen_out_sample[1]
+        input_diff[ii_sample, :gen_out_sample[2].shape[1], :] = gen_out_sample[2]
+
+    return input_anchor, input_same, input_diff
+
+
 def fit_generator_Ndiff(model,
                         generator,
                         steps_per_epoch=None,
@@ -287,51 +330,45 @@ def fit_generator_Ndiff(model,
                 batch_logs['size'] = batch_size
                 callbacks.on_batch_begin(batch_index, batch_logs)
 
-                # aggregate the losses
-
+                # aggregate the losses by inner index n_diff
                 loss_mat = np.zeros((batch_size, N_diff))
                 for ii_ndiff in range(N_diff):
 
                     # get the maximum sequence length
-                    len_anchor_max, len_same_max, len_diff_max = 0, 0, 0
-                    for ii_sample in range(batch_size):
-                        gen_out_sample = gen_out[ii_sample][ii_ndiff]
-                        if gen_out_sample[0].shape[1] > len_anchor_max: len_anchor_max = gen_out_sample[0].shape[1]
-                        if gen_out_sample[1].shape[1] > len_same_max: len_same_max = gen_out_sample[1].shape[1]
-                        if gen_out_sample[2].shape[1] > len_diff_max: len_diff_max = gen_out_sample[2].shape[1]
+                    len_anchor_max, len_same_max, len_diff_max = \
+                        get_maximum_length(batch_size=batch_size,
+                                           generator_output=gen_out,
+                                           index=[ii_ndiff]*batch_size)
 
                     print(len_anchor_max, len_same_max, len_diff_max)
-                    # padding
-                    input_anchor = np.zeros((batch_size, len_anchor_max, 80), dtype=np.float32)
-                    input_same = np.zeros((batch_size, len_same_max, 80), dtype=np.float32)
-                    input_diff = np.zeros((batch_size, len_diff_max, 80), dtype=np.float32)
-                    for ii_sample in range(batch_size):
-                        gen_out_sample = gen_out[ii_sample][ii_ndiff]
-                        input_anchor[ii_sample, :gen_out_sample[0].shape[1], :] = gen_out_sample[0]
-                        input_same[ii_sample, :gen_out_sample[1].shape[1], :] = gen_out_sample[1]
-                        input_diff[ii_sample, :gen_out_sample[2].shape[1], :] = gen_out_sample[2]
+                    # organize the input for the prediction
+                    input_anchor, input_same, input_diff = \
+                        make_same_length_batch(batch_size=batch_size,
+                                               len_anchor_max=len_anchor_max,
+                                               len_same_max=len_same_max,
+                                               len_diff_max=len_diff_max,
+                                               generator_output=gen_out,
+                                               index=[ii_ndiff]*batch_size)
 
                     output_batch_pred = model.predict_on_batch([input_anchor, input_same, input_diff])
 
                     loss = K.eval(triplet_loss_no_mean(output_batch_pred, margin))
                     loss_mat[:, ii_ndiff] = loss
 
+                # this the index of the input which has the maximum loss for each N_diff pairs
                 index_max_loss = np.argmax(loss_mat, axis=-1)
-                len_anchor_max, len_same_max, len_diff_max = 0, 0, 0
-                for ii_sample in range(batch_size):
-                    gen_out_sample = gen_out[ii_sample][index_max_loss[ii_sample]]
-                    if gen_out_sample[0].shape[1] > len_anchor_max: len_anchor_max = gen_out_sample[0].shape[1]
-                    if gen_out_sample[1].shape[1] > len_same_max: len_same_max = gen_out_sample[1].shape[1]
-                    if gen_out_sample[2].shape[1] > len_diff_max: len_diff_max = gen_out_sample[2].shape[1]
 
-                input_anchor = np.zeros((batch_size, len_anchor_max, 80), dtype=np.float32)
-                input_same = np.zeros((batch_size, len_same_max, 80), dtype=np.float32)
-                input_diff = np.zeros((batch_size, len_diff_max, 80), dtype=np.float32)
-                for ii_sample in range(batch_size):
-                    gen_out_sample = gen_out[ii_sample][index_max_loss[ii_sample]]
-                    input_anchor[ii_sample, :gen_out_sample[0].shape[1], :] = gen_out_sample[0]
-                    input_same[ii_sample, :gen_out_sample[1].shape[1], :] = gen_out_sample[1]
-                    input_diff[ii_sample, :gen_out_sample[2].shape[1], :] = gen_out_sample[2]
+                len_anchor_max, len_same_max, len_diff_max = get_maximum_length(batch_size=batch_size,
+                                                                                generator_output=gen_out,
+                                                                                index=index_max_loss)
+
+                input_anchor, input_same, input_diff = \
+                    make_same_length_batch(batch_size=batch_size,
+                                           len_anchor_max=len_anchor_max,
+                                           len_same_max=len_same_max,
+                                           len_diff_max=len_diff_max,
+                                           generator_output=gen_out,
+                                           index=index_max_loss)
 
                 outs = model.train_on_batch([input_anchor, input_same, input_diff], None,
                                             sample_weight=sample_weight,
@@ -485,13 +522,30 @@ def evaluate_generator(model,
                                  '(x, y, z, ii_ndiff) ' +
                                  str(generator_output))
 
-            losses = []
-            for gen_out_batch in gen_out:
-                outputs_batch_pred = model.predict_on_batch(gen_out_batch, sample_weight=sample_weight)
-                loss = K.eval(K.mean(triplet_loss(outputs_batch_pred, margin=margin)))
-                losses.append(loss)
+            loss_mat = np.zeros((batch_size, N_diff))
+            for ii_ndiff in range(N_diff):
+                # get the maximum sequence length
+                len_anchor_max, len_same_max, len_diff_max = \
+                    get_maximum_length(batch_size=batch_size,
+                                       generator_output=gen_out,
+                                       index=[ii_ndiff] * batch_size)
 
-            outs = np.max(losses)
+                # print(len_anchor_max, len_same_max, len_diff_max)
+                # organize the input for the prediction
+                input_anchor, input_same, input_diff = \
+                    make_same_length_batch(batch_size=batch_size,
+                                           len_anchor_max=len_anchor_max,
+                                           len_same_max=len_same_max,
+                                           len_diff_max=len_diff_max,
+                                           generator_output=gen_out,
+                                           index=[ii_ndiff] * batch_size)
+
+                output_batch_pred = model.predict_on_batch([input_anchor, input_same, input_diff])
+
+                loss = K.eval(triplet_loss_no_mean(output_batch_pred, margin))
+                loss_mat[:, ii_ndiff] = loss
+
+            outs = np.mean(np.max(loss_mat, axis=-1))
 
             # if isinstance(x, list):
             #     batch_size = x[0].shape[0]

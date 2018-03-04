@@ -278,7 +278,7 @@ def train_model_validation(filename_train_validation_set,
     filenames_features, Y_train_validation = \
         load_data(filename_labels_train_validation_set)
 
-    model_0 = model_switcher(filter_density,dropout,input_shape,output_shape)
+    model_0 = model_switcher(filter_density, dropout, input_shape, output_shape)
 
     # print(model_0.summary())
 
@@ -291,9 +291,9 @@ def train_model_validation(filename_train_validation_set,
                            batch_size,
                            patience,
                            input_shape,
-                            filename_train_validation_set,
-                            filenames_train, Y_train,
-                            filenames_validation, Y_validation,
-                            file_path_model,
+                           filename_train_validation_set,
+                           filenames_train, Y_train,
+                           filenames_validation, Y_validation,
+                           file_path_model,
                            filename_log,
                            channel)

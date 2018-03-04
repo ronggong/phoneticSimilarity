@@ -14,7 +14,7 @@ from data_preparation import load_data_embedding
 from models_siamese_tripletloss import train_embedding_siamese_Ndiff_train_fit_generator_val_routine
 import pickle
 
-import math
+# import math
 import numpy as np
 
 
@@ -22,29 +22,29 @@ if __name__ == '__main__':
 
     batch_size=128
     input_shape = (batch_size, None, 80)
-    output_shape = 54
+    output_shape = 29
     patience=15
-    # margin=sys.argv[1]
-    margin = str(0.15)
+    margin=sys.argv[1]
+    # margin = str(0.15)
 
-    # filename_feature = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train.pkl'
-    # filename_list_key = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key.pkl'
-    # filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding.pkl'
-    # filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding.pkl'
-    # filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits.pkl'
+    filename_feature = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train.pkl'
+    filename_list_key = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key.pkl'
+    filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding.pkl'
+    filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding.pkl'
+    filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits.pkl'
+
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/Users/ronggong/Documents_using/MTG document/dataset/phoneEmbedding'
     #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
-
-    filename_feature = os.path.join(path_dataset, 'feature_phn_embedding_train.pkl')
-    filename_list_key = os.path.join(path_dataset, 'list_key.pkl')
-    filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding.pkl')
-    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding.pkl')
-    filename_data_splits = os.path.join(path_dataset, 'data_splits.pkl')
-
-    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
-    path_model = '../../temp'
+    # filename_feature = os.path.join(path_dataset, 'feature_phn_embedding_train.pkl')
+    # filename_list_key = os.path.join(path_dataset, 'list_key.pkl')
+    # filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding.pkl')
+    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding.pkl')
+    # filename_data_splits = os.path.join(path_dataset, 'data_splits.pkl')
+    #
+    # # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier/'
+    # path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = load_data_embedding(filename_feature=filename_feature,
                                                                            filename_list_key=filename_list_key,
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     list_feature_fold_val = [np.expand_dims(feature, axis=0) for feature in list_feature_fold_val]
 
     for ii in range(0, 5):
-        model_name = 'phone_embedding_RNN_triplet_Ndiff5_margin'+margin
+        model_name = 'phone_embedding_RNN_triplet_Ndiff5_margin_cpu'+margin
 
         file_path_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
         file_path_log = os.path.join(path_model, 'log', model_name + '_' + str(ii) + '.csv')
@@ -77,5 +77,5 @@ if __name__ == '__main__':
                                                                       file_path_model=file_path_model,
                                                                       file_path_log=file_path_log,
                                                                       patience=patience,
-                                                                      verbose=1,
+                                                                      verbose=2,
                                                                       reverse_anchor=False)

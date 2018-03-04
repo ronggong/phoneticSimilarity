@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -J emb_frame
+#SBATCH -J emb_f_2
 #SBATCH -p high
 #SBATCH -N 1
 #SBATCH --workdir=/homedtic/rgong/phoneEmbeddingModelsTraining
@@ -12,8 +12,8 @@
 
 # Output/Error Text
 # ----------------
-#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_frame_ts.%N.%J.%u.out # STDOUT
-#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_frame_ts.%N.%J.%u.err # STDERR
+#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_frame_ts_2_class.%N.%J.%u.out # STDOUT
+#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_frame_ts_2_class.%N.%J.%u.err # STDERR
 
 module load libsndfile/1.0.28-foss-2017a
 

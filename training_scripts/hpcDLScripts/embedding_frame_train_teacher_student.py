@@ -27,34 +27,35 @@ def main():
     if not os.path.isdir(tmp_folder):
         os.mkdir(tmp_folder)
 
-    # filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
-    # filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
-    # filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
-    # filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
-    # filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
+    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
+
+    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+
+    filename_train_validation_set = os.path.join(tmp_folder, 'feature_frame.h5')
+    filename_labels_train_validation_set = os.path.join(tmp_folder, 'labels.pkl')
+
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/Users/ronggong/Documents_using/MTG document/dataset/phoneEmbedding'
     #
-    # filename_train_validation_set = os.path.join(tmp_folder, 'feature_frame.h5')
-    # filename_labels_train_validation_set = os.path.join(tmp_folder, 'labels.pkl')
+    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
     #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+    # filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+    #
+    # filename_train_validation_set = '../../temp/feature_frame.h5'
+    # filename_labels_train_validation_set = '../../temp/labels.pkl'
+    #
+    # path_model = '../../temp'
 
-
-    # path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/temp/'
-    path_model = '../../temp'
-
-    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
-    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
-    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
-    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
-
-    filename_scaler = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
-
-    filename_train_validation_set = '../../temp/feature_frame.h5'
-    filename_labels_train_validation_set = '../../temp/labels.pkl'
-
-    model_name = 'wide_frame_level_emb_teacher_student'
     input_dim = (80, 15)
-    output_shape = 54
+    output_shape = 2  # 54
 
     # feature, label, scaler loading
     list_feature_teacher = pickle.load(open(filename_feature_teacher, 'rb'))
@@ -79,6 +80,14 @@ def main():
         np.concatenate((array_feature_replicated_teacher, array_feature_replicated_student), axis=0)
 
     array_labels = np.concatenate((array_labels_teacher, array_labels_student))
+
+    # 2 class case
+    if output_shape == 2:
+        array_labels[array_labels <= 26] = 0
+        array_labels[array_labels > 26] = 1
+        model_name = 'wide_frame_level_emb_teacher_student_2_class'
+    else:
+        model_name = 'wide_frame_level_emb_teacher_student'
 
     # write feature and label to files
     h5f = h5py.File(filename_train_validation_set, 'w')

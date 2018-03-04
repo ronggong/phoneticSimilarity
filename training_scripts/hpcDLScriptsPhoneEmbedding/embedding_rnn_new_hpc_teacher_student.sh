@@ -5,7 +5,7 @@
 #SBATCH -N 1
 #SBATCH --workdir=/homedtic/rgong/phoneEmbeddingModelsTraining
 # --gres=gpu:1
-#SBATCH --nodelist=node020
+# --nodelist=node020
 #SBATCH --mem=80G
 #SBATCH --sockets-per-node=1
 #SBATCH --cores-per-socket=2
@@ -13,8 +13,8 @@
 
 # Output/Error Text
 # ----------------
-#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_ts.%N.%J.%u.out # STDOUT
-#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_ts.%N.%J.%u.err # STDERR
+#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_ts_2_class.%N.%J.%u.out # STDOUT
+#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_ts_2_class.%N.%J.%u.err # STDERR
 
 module load Tensorflow/1.5.0-foss-2017a-Python-2.7.12
 
