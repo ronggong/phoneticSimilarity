@@ -340,7 +340,7 @@ def fit_generator_Ndiff(model,
                                            generator_output=gen_out,
                                            index=[ii_ndiff]*batch_size)
 
-                    print(len_anchor_max, len_same_max, len_diff_max)
+                    # print(len_anchor_max, len_same_max, len_diff_max)
                     # organize the input for the prediction
                     input_anchor, input_same, input_diff = \
                         make_same_length_batch(batch_size=batch_size,
@@ -349,6 +349,9 @@ def fit_generator_Ndiff(model,
                                                len_diff_max=len_diff_max,
                                                generator_output=gen_out,
                                                index=[ii_ndiff]*batch_size)
+
+
+
 
                     output_batch_pred = model.predict_on_batch([input_anchor, input_same, input_diff])
 

@@ -23,59 +23,7 @@ from losses import triplet_loss
 from tensorflow.python.client import device_lib
 
 
-
-def embedding_model_base(input_shape):
-    # embedding base model
-    base_input = Input(batch_shape=input_shape)
-
-    # if device == 'CPU':
-    x = Bidirectional(LSTM(units=32, return_sequences=False))(base_input)
-
-    # else:
-    #     x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(base_input)
-
-    x = Dense(units=64, activation='relu')(x)
-
-    x = Dropout(rate=0.5)(x)
-
-    x = Dense(29, activation='linear', name='embedding_layer')(x)
-
-    embedding_model = Model(inputs=base_input, outputs=x, name='embedding')
-
-    # inputs
-    anchor_input = Input(batch_shape=input_shape, name='anchor_input')
-    same_input = Input(batch_shape=input_shape, name='same_input')
-    diff_input = Input(batch_shape=input_shape, name='diff_input')
-
-    anchor_embedding = embedding_model(anchor_input)
-    same_embedding = embedding_model(same_input)
-    diff_embedding = embedding_model(diff_input)
-
-    inputs = [anchor_input, same_input, diff_input]
-    outputs = [anchor_embedding, same_embedding, diff_embedding]
-
-    triplet_model = Model(inputs, outputs)
-
-    return embedding_model, triplet_model, outputs
-
-
-def embedding_siamese_1_lstm_1_dense(input_shape):
-    """use keras compile"""
-    # device = device_lib.list_local_devices()[0].device_type
-    embedding_model, triplet_model, outputs = embedding_model_base(input_shape)
-
-    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=0.15)))
-    triplet_model.compile(loss=None, optimizer='adam')
-
-    return embedding_model, triplet_model
-
-
-def embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape):
-    device = device_lib.list_local_devices()[0].device_type
-
-    # embedding base model
-    base_input = Input(batch_shape=input_shape)
-
+def embedding_2_lstm_1_dense_base(device, base_input):
     if device == 'CPU':
         x = Bidirectional(LSTM(units=32, return_sequences=True))(base_input)
         x = Bidirectional(LSTM(units=32, return_sequences=False))(x)
@@ -87,6 +35,40 @@ def embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape):
     x = Dense(units=64, activation='relu')(x)
 
     x = Dropout(rate=0.5)(x)
+
+    return x
+
+
+def embedding_1_lstm_1_dense_base(device, base_input):
+    if device == 'CPU':
+        x = Bidirectional(LSTM(units=32, return_sequences=False))(base_input)
+    else:
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(base_input)
+
+    x = Dense(units=64, activation='relu')(x)
+
+    x = Dropout(rate=0.5)(x)
+
+    return x
+
+
+def embedding_1_lstm_base(device, base_input):
+    if device == 'CPU':
+        x = Bidirectional(LSTM(units=32, return_sequences=False))(base_input)
+
+    else:
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(base_input)
+
+    return x
+
+
+def embedding_triplet_model(input_shape, output_shape, base_model):
+    device = device_lib.list_local_devices()[0].device_type
+
+    # embedding base model
+    base_input = Input(batch_shape=input_shape)
+
+    x = base_model(device, base_input)
 
     x = Dense(output_shape, activation='linear', name='embedding_layer')(x)
 
@@ -107,17 +89,6 @@ def embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape):
     triplet_model = Model(inputs, outputs)
 
     return embedding_model, triplet_model, outputs
-
-
-def embedding_siamese_2_lstm_1_dense_model_compile(input_shape, output_shape, margin):
-    """use keras compile"""
-
-    embedding_model, triplet_model, outputs = embedding_model_base_2_lstm_1_dense_base(input_shape, output_shape)
-
-    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=margin)))
-    triplet_model.compile(loss=None, optimizer='adam')
-
-    return embedding_model, triplet_model
 
 
 def calculate_loss(triplet_model,
@@ -178,7 +149,12 @@ def train_embedding_siamese_Ndiff_train_val_routine(list_feature_fold_train,
                                             reverse_anchor=reverse_anchor,
                                             N_diff=N_diff)
 
-    embedding_model, triplet_model = embedding_siamese_1_lstm_1_dense(input_shape)
+    base_model = embedding_1_lstm_1_dense_base
+
+    embedding_model, triplet_model, outputs = embedding_triplet_model(input_shape, 29, base_model)
+
+    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=margin)))
+    triplet_model.compile(loss=None, optimizer='adam')
 
     iter_time_train = len(labels_fold_train)*N_diff/batch_size if not reverse_anchor else len(labels_fold_train)*2*N_diff/batch_size
     iter_time_val = len(labels_fold_val)*N_diff/batch_size if not reverse_anchor else len(labels_fold_val)*2*N_diff/batch_size
@@ -259,6 +235,8 @@ def train_embedding_siamese_Ndiff_train_fit_generator_val_routine(list_feature_f
                                                                   verbose,
                                                                   reverse_anchor=False):
 
+    """dataset teacher student"""
+
     # generator_train = generator_triplet_Ndiff_yield_index(list_feature=list_feature_fold_train,
     #                                                       labels=labels_fold_train,
     #                                                       batch_size=1,
@@ -283,9 +261,15 @@ def train_embedding_siamese_Ndiff_train_fit_generator_val_routine(list_feature_f
                                                    batch_size=batch_size,
                                                    N_diff=N_diff)
 
-    embedding_model, triplet_model = embedding_siamese_2_lstm_1_dense_model_compile(input_shape=input_shape,
-                                                                                    output_shape=output_shape,
-                                                                                    margin=margin)
+    if output_shape == 2:
+        base_model = embedding_1_lstm_base  # best model for 2 class
+    else:
+        base_model = embedding_2_lstm_1_dense_base  # best model for 54 class
+
+    embedding_model, triplet_model, outputs = embedding_triplet_model(input_shape, output_shape, base_model)
+
+    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=margin)))
+    triplet_model.compile(loss=None, optimizer='adam')
 
     steps_per_epoch_train = int(np.ceil(len(labels_fold_train) / batch_size))
     steps_per_epcoch_val = int(np.ceil(len(labels_fold_val) / batch_size))
@@ -318,6 +302,7 @@ def train_embedding_siamese_batch(list_feature_fold_train,
                                   file_path_model,
                                   filename_log,
                                   patience):
+    """dataset only teacher"""
 
     print("organizing features...")
 
@@ -350,7 +335,12 @@ def train_embedding_siamese_batch(list_feature_fold_train,
                                       shuffle=True,
                                       reverse_anchor=True)
 
-    embedding_model, triplet_model = embedding_siamese_1_lstm_1_dense(input_shape)
+    base_model = embedding_1_lstm_1_dense_base  # best model for teacher data
+
+    embedding_model, triplet_model, outputs = embedding_triplet_model(input_shape, 29, base_model)
+
+    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=0.15)))
+    triplet_model.compile(loss=None, optimizer='adam')
 
     callbacks = [ModelCheckpoint(file_path_model, monitor='val_loss', verbose=0, save_best_only=True),
                  EarlyStopping(monitor='val_loss', patience=patience, verbose=0),
@@ -379,6 +369,7 @@ def train_embedding_siamese_batch_teacher_student(list_feature_fold_train,
                                                   filename_log,
                                                   patience,
                                                   reverse_anchor=False):
+    """siamese teacher student labels"""
 
     print("organizing features...")
 
@@ -394,9 +385,15 @@ def train_embedding_siamese_batch_teacher_student(list_feature_fold_train,
                                       shuffle=True,
                                       reverse_anchor=reverse_anchor)
 
-    embedding_model, triplet_model = embedding_siamese_2_lstm_1_dense_model_compile(input_shape=input_shape,
-                                                                                    output_shape=output_shape,
-                                                                                    margin=margin)
+    if output_shape == 2:
+        base_model = embedding_1_lstm_base  # best model for 2 class
+    else:
+        base_model = embedding_2_lstm_1_dense_base  # best model for 54 class
+
+    embedding_model, triplet_model, outputs = embedding_triplet_model(input_shape, output_shape, base_model)
+
+    triplet_model.add_loss(K.mean(triplet_loss(outputs, margin=margin)))
+    triplet_model.compile(loss=None, optimizer='adam')
 
     callbacks = [ModelCheckpoint(file_path_model, monitor='val_loss', verbose=0, save_best_only=True),
                  EarlyStopping(monitor='val_loss', patience=patience, verbose=0),

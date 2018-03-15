@@ -4,7 +4,7 @@
 #SBATCH -p high
 #SBATCH -N 1
 #SBATCH --workdir=/homedtic/rgong/phoneEmbeddingModelsTraining
-#SBATCH --nodelist=node021
+#--nodelist=node021
 #--gres=gpu:maxwell:1
 #--mem=80G
 #SBATCH --sockets-per-node=1
@@ -22,5 +22,5 @@ module load Tensorflow/1.5.0-foss-2017a-Python-2.7.12
 export PATH=/homedtic/rgong/anaconda2/bin:$PATH
 source activate /homedtic/rgong/keras_env
 
-python /homedtic/rgong/phoneEmbeddingModelsTraining/training_scripts/hpcDLScriptsPhoneEmbedding/embedding_rnn_siamese_train_teacher_student.py 0.15
+python /homedtic/rgong/phoneEmbeddingModelsTraining/training_scripts/hpcDLScriptsPhoneEmbedding/embedding_rnn_siamese_train_teacher_student.py 0.15 2
 

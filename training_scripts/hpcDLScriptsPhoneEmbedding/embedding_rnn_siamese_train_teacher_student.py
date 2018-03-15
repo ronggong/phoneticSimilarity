@@ -23,38 +23,49 @@ def nPr(n,r):
 
 if __name__ == '__main__':
 
-    batch_size=1
+    batch_size = 1
     input_shape = (batch_size, None, 80)
-    output_shape = 54
-    patience=15
+    output_shape = int(sys.argv[2])
+    # output_shape = 2
+    patience = 15
     # margin = 0.15
     margin = float(sys.argv[1])
 
-    # filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
-    # filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
-    # filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
-    # filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
-    # filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
-    # filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding_teacher_student.pkl'
-    # filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits_teacher_student.pkl'
+    filename_feature_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_teacher.pkl'
+    filename_list_key_teacher = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_teacher.pkl'
+    filename_feature_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/feature_phn_embedding_train_student.pkl'
+    filename_list_key_student = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/list_key_student.pkl'
+    filename_scaler = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/scaler_phn_embedding_train_teacher_student.pkl'
+    filename_label_encoder = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/le_phn_embedding_teacher_student.pkl'
+    filename_data_splits = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/data_splits_teacher_student.pkl'
+
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
     #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    filename_feature_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_teacher.pkl'
-    filename_list_key_teacher = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_teacher.pkl'
-    filename_feature_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/feature_phn_embedding_train_student.pkl'
-    filename_list_key_student = '/home/gong/Documents/MTG/dataset/phoneEmbedding/list_key_student.pkl'
-    filename_scaler = '/home/gong/Documents/MTG/dataset/phoneEmbedding/scaler_phn_embedding_train_teacher_student.pkl'
-    filename_label_encoder = '/home/gong/Documents/MTG/dataset/phoneEmbedding/le_phn_embedding_teacher_student.pkl'
-    filename_data_splits = '/home/gong/Documents/MTG/dataset/phoneEmbedding/data_splits_teacher_student.pkl'
-
-    path_model = '../../temp'
+    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    # filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+    #
+    # path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = load_data_embedding_teacher_student(filename_feature_teacher,
                                                                                            filename_list_key_teacher,
                                                                                            filename_feature_student,
                                                                                            filename_list_key_student,
                                                                                            filename_scaler)
+
+    if output_shape == 2:
+        labels = le.inverse_transform(labels_integer)
+        indices_teacher = [i for i, s in enumerate(labels) if 'teacher' in s]
+        indices_student = [i for i, s in enumerate(labels) if 'student' in s]
+        labels_integer[indices_teacher] = 0
+        labels_integer[indices_student] = 1
+
     train_index, val_index = pickle.load(open(filename_data_splits, 'rb'))
 
     list_feature_fold_train = [scaler.transform(list_feature_flatten[ii]) for ii in train_index]
@@ -66,7 +77,11 @@ if __name__ == '__main__':
     list_feature_fold_val = [np.expand_dims(feature, axis=0) for feature in list_feature_fold_val]
 
     for ii in range(0, 5):
-        model_name = 'phone_embedding_RNN_triplet_teacher_student_margin'+sys.argv[1]
+        if output_shape == 2:
+            model_name = 'phone_embedding_RNN_triplet_teacher_student_margin_2_class'+sys.argv[1]
+        else:
+            model_name = 'phone_embedding_RNN_triplet_teacher_student_margin'+sys.argv[1]
+
         # model_name = 'phone_embedding_RNN_triplet_teacher_student_margin0.15'
 
         file_path_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
