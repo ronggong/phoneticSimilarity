@@ -272,7 +272,6 @@ def getTeacherStudentRecordings():
     pickle.dump(list_key_teacher,
                 open(join(data_path_phone_embedding_model, 'list_key_teacher.pkl'), 'wb'), protocol=2)
 
-
     # student part
     dic_pho_embedding_train = {}
     dic_pho_embedding_val = {}
@@ -314,6 +313,39 @@ def getTeacherStudentRecordings():
     pickle.dump(list_key_student,
                 open(join(data_path_phone_embedding_model, 'list_key_student.pkl'), 'wb'), protocol=2)
 
+
+def getExtraTestRecordings():
+    """get extra phoneme log mel features"""
+
+    from src.train_test_filenames import getExtraStudentRecordings
+
+    extra_test_adult = getExtraStudentRecordings()
+
+    dic_pho_embedding_extra_adult = dumpFeaturePho(wav_path=primarySchool_wav_path,
+                                                   textgrid_path=primarySchool_textgrid_path,
+                                                   recordings=extra_test_adult,
+                                                   syllableTierName='line',
+                                                   phonemeTierName='details')
+
+    # fuse two dictionaries
+    list_key_student = list(set(list(dic_pho_embedding_extra_adult.keys())))
+
+    print(list_key_student)
+
+    # student part
+    feature_phn_test = []
+    for key in list_key_student:
+        feature_phn_test.append(dic_pho_embedding_extra_adult[key])
+
+    # save feature
+    filename_pho_embedding_test = join(data_path_phone_embedding_model, 'feature_phn_embedding_test_extra_student.pkl')
+    pickle.dump(feature_phn_test, open(filename_pho_embedding_test, 'wb'), protocol=2)
+
+    pickle.dump(list_key_student,
+                open(join(data_path_phone_embedding_model, 'list_key_extra_student.pkl'), 'wb'), protocol=2)
+
+
 if __name__ == '__main__':
 
-    getTeacherStudentRecordings()
+    # getTeacherStudentRecordings()
+    getExtraTestRecordings()

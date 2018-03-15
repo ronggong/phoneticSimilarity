@@ -162,3 +162,24 @@ def getStudentRecordings():
         ['20171217TianHao/lsxp-Lin_xing_he_ma-Hong_deng_ji-sizhu', 'student_02'],
         ]
     return valPrimarySchool, testPrimarySchool
+
+
+def getExtraStudentRecordings():
+    """extra extra test dataset adult students"""
+    extra_test_adult = [['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_01'],
+                        ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_02'],
+                        ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_03'],
+                        ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_04'],
+                        ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_05'],
+
+                        ['20171214SongRuoXuan/danbz-Kan_dai_wang-Ba_wang_bie_ji-nanluo', 'student_01'],
+                        ['20171214SongRuoXuan/danbz-Kan_dai_wang-Ba_wang_bie_ji-nanluo', 'student_02'],
+                        ['20171214SongRuoXuan/danbz-Kan_dai_wang-Ba_wang_bie_ji-nanluo', 'student_03'],
+
+                        ['20171214SongRuoXuan/daspd-Hai_dao_bing-Gui_fei_zui_jiu-nanluo', 'student_01'],
+                        ['20171214SongRuoXuan/daspd-Hai_dao_bing-Gui_fei_zui_jiu-nanluo', 'student_02'],
+
+                        ['20171214SongRuoXuan/daxp-Quan_jun_wang-Ba_wang_bie_ji-nanluo', 'student_01'],
+                        ['20171214SongRuoXuan/daxp-Quan_jun_wang-Ba_wang_bie_ji-nanluo', 'student_02']]
+
+    return extra_test_adult
