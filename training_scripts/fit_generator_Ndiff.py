@@ -335,12 +335,14 @@ def fit_generator_Ndiff(model,
                 for ii_ndiff in range(N_diff):
 
                     # get the maximum sequence length
+                    # use ii_ndiff sample in N_diff
                     len_anchor_max, len_same_max, len_diff_max = \
                         get_maximum_length(batch_size=batch_size,
                                            generator_output=gen_out,
                                            index=[ii_ndiff]*batch_size)
 
                     # print(len_anchor_max, len_same_max, len_diff_max)
+                    # pad the samples to the same length
                     # organize the input for the prediction
                     input_anchor, input_same, input_diff = \
                         make_same_length_batch(batch_size=batch_size,
@@ -350,21 +352,20 @@ def fit_generator_Ndiff(model,
                                                generator_output=gen_out,
                                                index=[ii_ndiff]*batch_size)
 
-
-
-
                     output_batch_pred = model.predict_on_batch([input_anchor, input_same, input_diff])
 
                     loss = K.eval(triplet_loss_no_mean(output_batch_pred, margin))
                     loss_mat[:, ii_ndiff] = loss
 
                 # this the index of the input which has the maximum loss for each N_diff pairs
+                # index_max_loss dim: [batch_size, 1]
                 index_max_loss = np.argmax(loss_mat, axis=-1)
 
                 len_anchor_max, len_same_max, len_diff_max = get_maximum_length(batch_size=batch_size,
                                                                                 generator_output=gen_out,
                                                                                 index=index_max_loss)
 
+                # input_anchor, input_same, input_diff dim: [batch_size, length, feature_dim]
                 input_anchor, input_same, input_diff = \
                     make_same_length_batch(batch_size=batch_size,
                                            len_anchor_max=len_anchor_max,
@@ -430,6 +431,7 @@ def fit_generator_Ndiff(model,
 
     callbacks.on_train_end()
     return history
+
 
 def evaluate_generator(model,
                        generator,

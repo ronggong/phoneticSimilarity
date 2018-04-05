@@ -1,5 +1,6 @@
 from keras import backend as K
 
+
 def cosine_distance(x, y, vects_are_normalized=True):
     # L2 normalize vectors before dot product
     if not vects_are_normalized:
@@ -11,6 +12,7 @@ def cosine_distance(x, y, vects_are_normalized=True):
     # positive (which is the case after ReLU activation).
     return K.squeeze(distance, axis=-1)
 
+
 def triplet_loss(inputs, margin=0.5):
     """calculate triplet loss"""
     anchor, same, diff = inputs
@@ -20,6 +22,7 @@ def triplet_loss(inputs, margin=0.5):
     loss = K.maximum(K.constant(0), margin + same_dist/2 - diff_dist/2)
 
     return K.mean(loss)
+
 
 def triplet_loss_no_mean(inputs, margin=0.5):
     """calculate triplet loss"""

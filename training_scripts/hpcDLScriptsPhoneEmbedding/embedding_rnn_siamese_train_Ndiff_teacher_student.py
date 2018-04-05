@@ -25,22 +25,10 @@ if __name__ == '__main__':
     input_shape = (batch_size, None, 80)
     output_shape = 2
     patience = 15
-    margin = sys.argv[1]
-    # margin = str(0.15)
+    # margin = sys.argv[1]
+    margin = str(0.15)
 
-    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
-
-    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
-    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
-    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
-    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-    filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
-    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
-    filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
-
-    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    # path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    # path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
     #
     # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
     # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
@@ -50,7 +38,19 @@ if __name__ == '__main__':
     # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
     # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
     #
-    # path_model = '../../temp'
+    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+
+    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+
+    path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
         load_data_embedding_teacher_student(filename_feature_teacher,
@@ -75,6 +75,8 @@ if __name__ == '__main__':
     list_feature_fold_val = [scaler.transform(list_feature_flatten[ii]) for ii in val_index]
     labels_integer_fold_val = labels_integer[val_index]
     list_feature_fold_val = [np.expand_dims(feature, axis=0) for feature in list_feature_fold_val]
+
+    print(labels_integer_fold_train)
 
     for ii in range(0, 5):
         if output_shape == 2:

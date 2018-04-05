@@ -21,35 +21,35 @@ if __name__ == '__main__':
 
     batch_size = 64
     input_shape = (batch_size, None, 80)
-    output_shape = 2
     patience = 15
+    output_shape = 27
 
-    # path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
-    #
-    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
-    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
-    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
-    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-    # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
-    #
-    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
-    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
-    #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
 
     filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
     filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
     filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
     filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-
     filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
 
     filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
     filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
 
-    path_model = '../../temp'
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    #
+    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    #
+    # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+    #
+    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+    #
+    # path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
                 load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
@@ -58,12 +58,12 @@ if __name__ == '__main__':
                                                     filename_list_key_student=filename_list_key_student,
                                                     filename_scaler=filename_scaler_teacher_student)
 
-    if output_shape == 2:
-        labels = le.inverse_transform(labels_integer)
-        indices_teacher = [i for i, s in enumerate(labels) if 'teacher' in s]
-        indices_student = [i for i, s in enumerate(labels) if 'student' in s]
-        labels_integer[indices_teacher] = 0
-        labels_integer[indices_student] = 1
+    # combine teacher and student label to the same one
+    labels = le.inverse_transform(labels_integer)
+    phn_set = list(set([l.split('_')[0] for l in labels]))
+    for ii in range(len(phn_set)):
+        indices_phn = [i for i, s in enumerate(labels) if phn_set[ii] == s.split('_')[0]]
+        labels_integer[indices_phn] = ii
 
     # split folds
     # folds5_split_indices = cv5foldsIndices(list_feature_flatten=list_feature_flatten, label_integer=labels_integer)
@@ -84,12 +84,9 @@ if __name__ == '__main__':
 
         model_name = config_select(config=config)
 
-        if output_shape == 2:
-            model_name += '_2_class'
-
         for ii in range(5):
-            file_path_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
-            file_path_log = os.path.join(path_model, 'log', model_name + '_teacher_student' + '_' + str(ii) + '.csv')
+            file_path_model = os.path.join(path_model, model_name + '_27_class' + '_' + str(ii) + '.h5')
+            file_path_log = os.path.join(path_model, 'log', model_name + '_27_class' + '_' + str(ii) + '.csv')
 
             list_feature_fold_train = [scaler.transform(list_feature_flatten[ii]) for ii in train_index]
             labels_integer_fold_train = labels_integer[train_index]

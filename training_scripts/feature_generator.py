@@ -66,11 +66,24 @@ def sort_feature_by_seq_length(list_feature, labels, batch_size):
     list_len = [len(l) for l in list_feature]
     idx_sort = np.argsort(list_len)
     list_feature_sorted = [list_feature[ii] for ii in idx_sort]
-    labels_sorted = labels[idx_sort]
+    if isinstance(labels, list):
+        labels_sorted = [labels[ii] for ii in idx_sort]
+    else:
+        labels_sorted = labels[idx_sort]
 
     iter_times = int(np.ceil(len(list_feature_sorted) / float(batch_size)))
 
     return list_feature_sorted, labels_sorted, iter_times
+
+
+def build_y_batch(batch_size, labels_batch):
+    """reorganize y batch to a 2 dim list"""
+    y_phn, y_pro = np.zeros((batch_size, len(labels_batch[0][0]))), np.zeros((batch_size, len(labels_batch[0][1])))
+    for ii, (phn, pro) in enumerate(labels_batch):
+        y_phn[ii, :] = phn
+        y_pro[ii, :] = pro
+    y_batch = [y_phn, y_pro]
+    return y_batch
 
 
 def batch_grouping(list_feature_sorted, labels_sorted, iter_times, batch_size):
@@ -91,7 +104,10 @@ def batch_grouping(list_feature_sorted, labels_sorted, iter_times, batch_size):
         feature_dim_in_batch = list_feature_sorted[(ii+1)*batch_size-1].shape[1]
 
         X_batch = np.zeros((batch_size, max_len_in_batch, feature_dim_in_batch), dtype='float32')
-        y_batch = labels_sorted[ii*batch_size: (ii+1)*batch_size, :]
+        if isinstance(labels_sorted, list):
+            y_batch = build_y_batch(batch_size, labels_sorted[ii * batch_size: (ii + 1) * batch_size])
+        else:
+            y_batch = labels_sorted[ii * batch_size: (ii + 1) * batch_size, :]
 
         # print(ii*batch_size, (ii+1)*batch_size)
         for jj in range(ii*batch_size, (ii+1)*batch_size):
@@ -105,7 +121,11 @@ def batch_grouping(list_feature_sorted, labels_sorted, iter_times, batch_size):
     feature_dim_in_batch = list_feature_sorted[-1].shape[1]
 
     X_batch = np.zeros((batch_size, max_len_in_batch, feature_dim_in_batch), dtype='float32')
-    y_batch = labels_sorted[-batch_size:, :]
+    if isinstance(labels_sorted, list):
+        y_batch = build_y_batch(batch_size, labels_sorted[-batch_size:])
+
+    else:
+        y_batch = labels_sorted[-batch_size:, :]
 
     for jj in range(len(list_feature_sorted)-batch_size, len(list_feature_sorted)):
         X_batch[jj-(len(list_feature_sorted)-batch_size), :len(list_feature_sorted[jj]), :] = list_feature_sorted[jj]
@@ -125,8 +145,10 @@ def shuffleListBatch(list_X_batch, list_y_batch):
     for ii_batch in range(len(list_X_batch)):
         p = np.random.permutation(list_X_batch[ii_batch].shape[0])
         list_X_batch[ii_batch] = list_X_batch[ii_batch][p, :, :]
-        list_y_batch[ii_batch] = list_y_batch[ii_batch][p, :]
-
+        if len(list_y_batch[ii_batch]) == 2:
+            list_y_batch[ii_batch] = [list_y_batch[ii_batch][0][p, :], list_y_batch[ii_batch][1][p, :]]
+        else:
+            list_y_batch[ii_batch] = list_y_batch[ii_batch][p, :]
 
     return list_X_batch, list_y_batch
 

@@ -165,7 +165,7 @@ def getStudentRecordings():
 
 
 def getExtraStudentRecordings():
-    """extra extra test dataset adult students"""
+    """extra test dataset adult students"""
     extra_test_adult = [['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_01'],
                         ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_02'],
                         ['20171214SongRuoXuan/daeh-Yang_yu_huan-Tai_zhen_wai_zhuan-nanluo', 'student_03'],

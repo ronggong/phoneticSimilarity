@@ -62,7 +62,7 @@ def embedding_1_lstm_base(device, base_input):
     return x
 
 
-def embedding_triplet_model(input_shape, output_shape, base_model):
+def embedding_base_model(input_shape, output_shape, base_model):
     device = device_lib.list_local_devices()[0].device_type
 
     # embedding base model
@@ -73,6 +73,13 @@ def embedding_triplet_model(input_shape, output_shape, base_model):
     x = Dense(output_shape, activation='linear', name='embedding_layer')(x)
 
     embedding_model = Model(inputs=base_input, outputs=x, name='embedding')
+
+    return embedding_model
+
+
+def embedding_triplet_model(input_shape, output_shape, base_model):
+
+    embedding_model = embedding_base_model(input_shape, output_shape, base_model)
 
     # inputs
     anchor_input = Input(batch_shape=input_shape, name='anchor_input')

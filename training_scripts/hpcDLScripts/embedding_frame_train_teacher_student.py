@@ -2,7 +2,8 @@
 script to train the frame level embedding
 """
 
-import sys, os
+import sys
+import os
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = str(0)
 
@@ -15,11 +16,13 @@ import pickle
 import h5py
 import atexit
 
+
 def exit_handler(filenames):
     """delete files when exits"""
     for fn in filenames:
         if os.path.isfile(fn):
             os.remove(fn)
+
 
 def main():
 

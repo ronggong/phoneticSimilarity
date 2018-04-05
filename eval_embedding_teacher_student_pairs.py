@@ -16,13 +16,19 @@ from src.audio_preprocessing import featureReshape
 from sklearn.metrics import average_precision_score
 from src.utilFunctions import get_unique_label
 
+from training_scripts.models_siamese_tripletloss import embedding_1_lstm_base
+from training_scripts.models_siamese_tripletloss import embedding_2_lstm_1_dense_base
+from training_scripts.models_siamese_tripletloss import embedding_base_model
+
 
 def embedding_classifier_ap(filename_feature_teacher,
                             filename_list_key_teacher,
                             filename_feature_student,
                             filename_list_key_student,
                             filename_scaler,
-                            embedding_dim):
+                            embedding_dim,
+                            config,
+                            val_test):
     """calculate teacher student pairs average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -36,61 +42,62 @@ def embedding_classifier_ap(filename_feature_teacher,
     path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
 
     # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
-    configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+    # configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
-    for config in configs:
+    model_name = config_select(config) + '_2_class' if embedding_dim == 2 else config_select(config)
 
-        model_name = config_select(config) + '_2_class' if embedding_dim == 2 else config_select(config)
+    list_ap = []
 
-        list_ap = []
+    for ii in range(5):
+        filename_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
+        model = load_model(filepath=filename_model)
+        weights = model.get_weights()
 
-        for ii in range(5):
-            filename_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
-            model = load_model(filepath=filename_model)
-            weights = model.get_weights()
+        input_shape = [1, None, 80]
+        model_1_batch = model_select(config=config, input_shape=input_shape, output_shape=embedding_dim)
+        model_1_batch.compile(optimizer='adam',
+                              loss='categorical_crossentropy',
+                              metrics=['accuracy'])
+        model_1_batch.set_weights(weights=weights)
 
-            input_shape = [1, None, 80]
-            model_1_batch = model_select(config=config, input_shape=input_shape, output_shape=embedding_dim)
-            model_1_batch.compile(optimizer='adam',
-                                  loss='categorical_crossentropy',
-                                  metrics=['accuracy'])
-            model_1_batch.set_weights(weights=weights)
+        embeddings = np.zeros((len(list_feature_flatten_val), embedding_dim))
+        for ii_emb in range(len(list_feature_flatten_val)):
+            print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
 
-            embeddings = np.zeros((len(list_feature_flatten_val), embedding_dim))
-            for ii_emb in range(len(list_feature_flatten_val)):
-                print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
+            x_batch = np.expand_dims(scaler.transform(list_feature_flatten_val[ii_emb]), axis=0)
+            embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
 
-                x_batch = np.expand_dims(scaler.transform(list_feature_flatten_val[ii_emb]), axis=0)
-                embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+        # dist_mat = distance_matrix_embedding_classifier(embeddings)
 
-            # dist_mat = distance_matrix_embedding_classifier(embeddings)
+        list_dist = []
+        list_gt = []
+        for ii_class in range(27):
+            # teacher student pair class index
+            idx_ii_class = np.where(np.logical_or(label_integer_val==2*ii_class, label_integer_val==2*ii_class+1))[0]
+            dist_mat = (2.0 - squareform(pdist(embeddings[idx_ii_class], 'cosine')))/2.0
+            labels_ii_class = [label_integer_val[idx] for idx in idx_ii_class]
+            gt_mat = ground_truth_matrix(labels_ii_class)
 
-            list_dist = []
-            list_gt = []
-            for ii_class in range(27):
-                # teacher student pair class index
-                idx_ii_class = np.where(np.logical_or(label_integer_val==2*ii_class, label_integer_val==2*ii_class+1))[0]
-                dist_mat = (2.0 - squareform(pdist(embeddings[idx_ii_class], 'cosine')))/2.0
-                labels_ii_class = [label_integer_val[idx] for idx in idx_ii_class]
-                gt_mat = ground_truth_matrix(labels_ii_class)
+            sample_num = dist_mat.shape[0]
+            iu1 = np.triu_indices(sample_num, 1)  # trim the upper mat
 
-                sample_num = dist_mat.shape[0]
-                iu1 = np.triu_indices(sample_num, 1)  # trim the upper mat
+            list_dist.append(dist_mat[iu1])
+            list_gt.append(gt_mat[iu1])
 
-                list_dist.append(dist_mat[iu1])
-                list_gt.append(gt_mat[iu1])
+        list_dist = np.concatenate(list_dist)
+        list_gt = np.concatenate(list_gt)
 
-            list_dist = np.concatenate(list_dist)
-            list_gt = np.concatenate(list_gt)
+        ap = average_precision_score(y_true=np.abs(list_gt), y_score=np.abs(list_dist), average='weighted')
 
-            ap = average_precision_score(y_true=np.abs(list_gt), y_score=np.abs(list_dist), average='weighted')
+        list_ap.append(ap)
 
-            list_ap.append(ap)
+    post_fix = '_teacher_student_pairs' if val_test == 'val' else '_teacher_extra_student_pairs'
 
-        filename_eval = os.path.join(path_eval, model_name + '_teacher_student_pairs' + '.csv')
-        with open(filename_eval, 'w') as csvfile:
-            csvwriter = csv.writer(csvfile, delimiter=',', )
-            csvwriter.writerow([np.mean(list_ap), np.std(list_ap)])
+    filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
+
+    with open(filename_eval, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=',', )
+        csvwriter.writerow([np.mean(list_ap), np.std(list_ap)])
 
 
 def embedding_frame_ap(filename_feature_teacher,
@@ -98,7 +105,8 @@ def embedding_frame_ap(filename_feature_teacher,
                        filename_feature_student,
                        filename_list_key_student,
                        filename_scaler,
-                       embedding_dim):
+                       embedding_dim,
+                       val_test):
     """frame_leval embedding average precision"""
     logger = logging.getLogger(__name__)
 
@@ -171,7 +179,10 @@ def embedding_frame_ap(filename_feature_teacher,
 
         list_ap.append(ap)
 
-    filename_eval = os.path.join(path_eval, model_name + '_pairs' + '.csv')
+    post_fix = '_pairs' if val_test == 'val' else '_extra_pairs'
+
+    filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
+
     with open(filename_eval, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', )
         csvwriter.writerow([np.mean(list_ap), np.std(list_ap)])
@@ -183,7 +194,8 @@ def embedding_siamese_ap(filename_feature_teacher,
                          filename_list_key_student,
                          filename_scaler,
                          model_name,
-                         embedding_dim):
+                         embedding_dim,
+                         val_test):
     """calculate average precision of siamese triplet embedding"""
 
     list_feature_flatten_test, labels, le, scaler = \
@@ -205,6 +217,17 @@ def embedding_siamese_ap(filename_feature_teacher,
         filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
         model = load_model(filepath=filename_model, compile=False)
         model_embedding = model.get_layer('embedding')
+        weights = model_embedding.get_weights()
+
+        if embedding_dim == 2:
+            embedding_model = embedding_1_lstm_base
+        else:
+            embedding_model = embedding_2_lstm_1_dense_base
+
+        model_embedding = embedding_base_model(input_shape=(1, None, 80),
+                                               output_shape=embedding_dim,
+                                               base_model=embedding_model)
+        model_embedding.set_weights(weights=weights)
 
         embeddings = np.zeros((len(list_feature_flatten_test), embedding_dim))
         for ii_emb in range(len(list_feature_flatten_test)):
@@ -248,41 +271,88 @@ def embedding_siamese_ap(filename_feature_teacher,
 
         list_ap.append(ap)
 
-    filename_eval = os.path.join(path_eval, model_name + '_pairs' + '.csv')
+    post_fix = '_pairs' if val_test == 'val' else '_extra_pairs'
+
+    filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
+
     with open(filename_eval, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', )
         csvwriter.writerow([np.mean(list_ap), np.std(list_ap)])
 
 
 if __name__ == '__main__':
-    # teacher_student val set
+    val_test = 'test'
+
     path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
-    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_val_teacher.pkl')
+
+    if val_test == 'val':
+        filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_val_teacher.pkl')
+        filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_val_student.pkl')
+        filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    elif val_test == 'test':
+        filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_test_teacher.pkl')
+        filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_test_extra_student.pkl')
+        filename_list_key_student = os.path.join(path_dataset, 'list_key_extra_student.pkl')
+    else:
+        raise ValueError('val test is not valid.')
+
     filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
-    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_val_student.pkl')
-    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
     filename_scaler = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
 
-    # embedding_classifier_ap(filename_feature_teacher,
-    #                         filename_list_key_teacher,
-    #                         filename_feature_student,
-    #                         filename_list_key_student,
-    #                         filename_scaler,
-    #                         embedding_dim=2)
+    # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
-    # embedding_frame_ap(filename_feature_teacher,
-    #                    filename_list_key_teacher,
-    #                    filename_feature_student,
-    #                    filename_list_key_student,
-    #                    filename_scaler,
-    #                    embedding_dim=2)
+    if val_test == 'test':
+        # embedding_classifier_ap(filename_feature_teacher,
+        #                         filename_list_key_teacher,
+        #                         filename_feature_student,
+        #                         filename_list_key_student,
+        #                         filename_scaler,
+        #                         embedding_dim=54,
+        #                         config=[2, 1],
+        #                         val_test=val_test)
+        #
+        # embedding_classifier_ap(filename_feature_teacher,
+        #                         filename_list_key_teacher,
+        #                         filename_feature_student,
+        #                         filename_list_key_student,
+        #                         filename_scaler,
+        #                         embedding_dim=2,
+        #                         config=[1, 0],
+        #                         val_test=val_test)
 
-    for margin in ['0.0', '0.15', '0.30', '0.45', '0.60', '0.75', '0.90']:
-        model_name = "phone_embedding_RNN_triplet_teacher_student_margin_2_class" + margin
+        # embedding_frame_ap(filename_feature_teacher,
+        #                    filename_list_key_teacher,
+        #                    filename_feature_student,
+        #                    filename_list_key_student,
+        #                    filename_scaler,
+        #                    embedding_dim=54,
+        #                    val_test=val_test)
+        #
+        # embedding_frame_ap(filename_feature_teacher,
+        #                    filename_list_key_teacher,
+        #                    filename_feature_student,
+        #                    filename_list_key_student,
+        #                    filename_scaler,
+        #                    embedding_dim=2,
+        #                    val_test=val_test)
+
+        # for margin in ['0.0', '0.15', '0.30', '0.45', '0.60', '0.75', '0.90']:
+        # model_name = "phone_embedding_RNN_triplet_Ndiff5_teacher_student_margin_batch_512_cpu0.15"
+        # embedding_siamese_ap(filename_feature_teacher,
+        #                      filename_list_key_teacher,
+        #                      filename_feature_student,
+        #                      filename_list_key_student,
+        #                      filename_scaler,
+        #                      model_name,
+        #                      embedding_dim=54,
+        #                      val_test='test')
+
+        model_name = "phone_embedding_RNN_triplet_Ndiff5_teacher_student_margin_2_class_batch_512_cpu0.45"
         embedding_siamese_ap(filename_feature_teacher,
                              filename_list_key_teacher,
                              filename_feature_student,
                              filename_list_key_student,
                              filename_scaler,
                              model_name,
-                             embedding_dim=2)
+                             embedding_dim=2,
+                             val_test='test')

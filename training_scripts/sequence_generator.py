@@ -1,6 +1,7 @@
 import numpy as np
 from keras.utils.data_utils import Sequence
 
+
 class tripletNdiffYieldIndexSequence(Sequence):
 
     def __init__(self, list_feature, labels, batch_size=1, N_diff=5):
