@@ -3,6 +3,7 @@ import os
 import pickle
 import logging
 import numpy as np
+import pandas as pd
 from eval_embedding import ground_truth_matrix
 # from eval_embedding import eval_embeddings
 from data_preparation import load_data_embedding_teacher_student
@@ -10,6 +11,8 @@ from data_preparation import feature_replication_teacher_student
 from parameters import config_select
 from models_RNN import model_select
 from keras.models import load_model
+from keras.models import Model
+from keras.layers import Dense
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 from src.audio_preprocessing import featureReshape
@@ -28,7 +31,8 @@ def embedding_classifier_ap(filename_feature_teacher,
                             filename_scaler,
                             embedding_dim,
                             config,
-                            val_test):
+                            val_test,
+                            MTL=False):
     """calculate teacher student pairs average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -38,42 +42,64 @@ def embedding_classifier_ap(filename_feature_teacher,
                                             filename_list_key_student=filename_list_key_student,
                                             filename_scaler=filename_scaler)
 
-    path_model = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
-    path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
+    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
+    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
 
     # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
     # configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
-    model_name = config_select(config) + '_2_class' if embedding_dim == 2 else config_select(config)
+    prefix = '_MTL' if MTL else '_2_class_teacher_student'
+    model_name = config_select(config) + prefix if embedding_dim == 2 else config_select(config)
 
     list_ap = []
-
+    # average precision of each phone
+    array_ap_phn_5_runs = np.zeros((5, 27))
     for ii in range(5):
-        filename_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
+        print('run time', ii)
+        filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
         model = load_model(filepath=filename_model)
         weights = model.get_weights()
 
         input_shape = [1, None, 80]
-        model_1_batch = model_select(config=config, input_shape=input_shape, output_shape=embedding_dim)
-        model_1_batch.compile(optimizer='adam',
-                              loss='categorical_crossentropy',
-                              metrics=['accuracy'])
+        x, input = model_select(config=config, input_shape=input_shape)
+
+        if MTL:
+            pronun_out = Dense(27, activation='softmax', name='pronunciation')(x)
+            profess_out = Dense(embedding_dim, activation='softmax', name='professionality')(x)
+            model_1_batch = Model(inputs=input, outputs=[pronun_out, profess_out])
+            model_1_batch.compile(optimizer='adam',
+                                  loss='categorical_crossentropy',
+                                  loss_weights=[0.5, 0.5])
+        else:
+            outputs = Dense(embedding_dim, activation='softmax')(x)
+            model_1_batch = Model(inputs=input, outputs=outputs)
+
+            model_1_batch.compile(optimizer='adam',
+                                  loss='categorical_crossentropy',
+                                  metrics=['accuracy'])
         model_1_batch.set_weights(weights=weights)
 
         embeddings = np.zeros((len(list_feature_flatten_val), embedding_dim))
         for ii_emb in range(len(list_feature_flatten_val)):
-            print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
+            # print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
 
             x_batch = np.expand_dims(scaler.transform(list_feature_flatten_val[ii_emb]), axis=0)
-            embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+            if MTL:
+                _, embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+            else:
+                embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
 
         # dist_mat = distance_matrix_embedding_classifier(embeddings)
 
         list_dist = []
         list_gt = []
+        array_ap_phn = np.zeros((27,))
+        cols = []
         for ii_class in range(27):
             # teacher student pair class index
-            idx_ii_class = np.where(np.logical_or(label_integer_val==2*ii_class, label_integer_val==2*ii_class+1))[0]
+            idx_ii_class = np.where(np.logical_or(label_integer_val == 2*ii_class,
+                                                  label_integer_val == 2*ii_class+1))[0]
+
             dist_mat = (2.0 - squareform(pdist(embeddings[idx_ii_class], 'cosine')))/2.0
             labels_ii_class = [label_integer_val[idx] for idx in idx_ii_class]
             gt_mat = ground_truth_matrix(labels_ii_class)
@@ -84,20 +110,41 @@ def embedding_classifier_ap(filename_feature_teacher,
             list_dist.append(dist_mat[iu1])
             list_gt.append(gt_mat[iu1])
 
-        list_dist = np.concatenate(list_dist)
-        list_gt = np.concatenate(list_gt)
+            # calculate the average precision of each phoneme
+            ap_phn = average_precision_score(y_true=np.abs(list_gt[ii_class]),
+                                             y_score=np.abs(list_dist[ii_class]),
+                                             average='weighted')
 
-        ap = average_precision_score(y_true=np.abs(list_gt), y_score=np.abs(list_dist), average='weighted')
+            cols.append(le.inverse_transform(2*ii_class).split('_')[0])
+            array_ap_phn[ii_class] = ap_phn
+
+        array_dist = np.concatenate(list_dist)
+        array_gt = np.concatenate(list_gt)
+
+        ap = average_precision_score(y_true=np.abs(array_gt), y_score=np.abs(array_dist), average='weighted')
 
         list_ap.append(ap)
 
-    post_fix = '_teacher_student_pairs' if val_test == 'val' else '_teacher_extra_student_pairs'
+        array_ap_phn_5_runs[ii-1, :] = array_ap_phn
+
+    post_fix = prefix+'_2_class' if val_test == 'val' else prefix+'_2_class_extra_student'
 
     filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
 
     with open(filename_eval, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', )
         csvwriter.writerow([np.mean(list_ap), np.std(list_ap)])
+
+    # organize the Dataframe
+    ap_phn_mean = np.mean(array_ap_phn_5_runs, axis=0)
+    ap_phn_std = np.std(array_ap_phn_5_runs, axis=0)
+    ap_phn_mean_std = pd.DataFrame(np.transpose(np.vstack((ap_phn_mean, ap_phn_std))),
+                                   columns=['mean', 'std'],
+                                   index=cols)
+
+    ap_phn_mean_std = ap_phn_mean_std.sort_values(by='mean')
+    ap_phn_mean_std.to_csv(os.path.join(path_eval,
+                                        model_name + post_fix + '_phn_mean_std.csv'))
 
 
 def embedding_frame_ap(filename_feature_teacher,
@@ -311,14 +358,15 @@ if __name__ == '__main__':
         #                         config=[2, 1],
         #                         val_test=val_test)
         #
-        # embedding_classifier_ap(filename_feature_teacher,
-        #                         filename_list_key_teacher,
-        #                         filename_feature_student,
-        #                         filename_list_key_student,
-        #                         filename_scaler,
-        #                         embedding_dim=2,
-        #                         config=[1, 0],
-        #                         val_test=val_test)
+        embedding_classifier_ap(filename_feature_teacher,
+                                filename_list_key_teacher,
+                                filename_feature_student,
+                                filename_list_key_student,
+                                filename_scaler,
+                                embedding_dim=2,
+                                config=[2, 0],
+                                val_test=val_test,
+                                MTL=True)
 
         # embedding_frame_ap(filename_feature_teacher,
         #                    filename_list_key_teacher,
@@ -347,12 +395,24 @@ if __name__ == '__main__':
         #                      embedding_dim=54,
         #                      val_test='test')
 
-        model_name = "phone_embedding_RNN_triplet_Ndiff5_teacher_student_margin_2_class_batch_512_cpu0.45"
-        embedding_siamese_ap(filename_feature_teacher,
-                             filename_list_key_teacher,
-                             filename_feature_student,
-                             filename_list_key_student,
-                             filename_scaler,
-                             model_name,
-                             embedding_dim=2,
-                             val_test='test')
+        # model_name = "phone_embedding_RNN_triplet_Ndiff5_teacher_student_margin_2_class_batch_512_cpu0.45"
+        # embedding_siamese_ap(filename_feature_teacher,
+        #                      filename_list_key_teacher,
+        #                      filename_feature_student,
+        #                      filename_list_key_student,
+        #                      filename_scaler,
+        #                      model_name,
+        #                      embedding_dim=2,
+        #                      val_test='test')
+    else:
+        configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+        for config in configs:
+            embedding_classifier_ap(filename_feature_teacher,
+                                    filename_list_key_teacher,
+                                    filename_feature_student,
+                                    filename_list_key_student,
+                                    filename_scaler,
+                                    embedding_dim=2,
+                                    config=config,
+                                    val_test=val_test,
+                                    MTL=True)

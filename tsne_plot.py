@@ -1,163 +1,113 @@
-import matplotlib
-matplotlib.use('Tkagg')
-
-import os
-# import csv
-import numpy as np
-import pickle
-import logging
-# from src.distance_measures import gau_bh
-# from sklearn.mixture import GaussianMixture
 from sklearn.manifold import TSNE
-from data_preparation import load_data_embedding
-from keras.models import load_model
-# from keras.models import Model
-from models_RNN import model_select
+import os
+import pickle
+import itertools
+import numpy as np
 from parameters import config_select
-from data_preparation import feature_replication
-from src.audio_preprocessing import featureReshape
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+import seaborn as sns
+sns.set_style('darkgrid')
+sns.set_palette('muted')
+sns.set_context("notebook", font_scale=1,
+                rc={"lines.linewidth": 2.5})
 
-def plot_tsne(embeddings, labels):
+# from keras.models import Model
+
+
+def plot_tsne_profess(embeddings, labels, le):
+    tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=3000)
+    for ii_class in range(27):
+        len_stu = len(embeddings[labels == 2*ii_class, :])
+        label_class_name0 = le.inverse_transform(2 * ii_class)
+        label_class_name1 = le.inverse_transform(2 * ii_class+1)
+
+        # plot t_sne for teacher and student
+        try:
+            tsne_results = tsne.fit_transform(np.vstack((embeddings[labels == 2*ii_class, :],
+                                                         embeddings[labels == 2*ii_class+1, :])))
+            plt.figure()
+
+            plt.scatter(tsne_results[:len_stu, 0],
+                        tsne_results[:len_stu, 1],
+                        label=label_class_name0)
+
+            plt.scatter(tsne_results[len_stu:, 0],
+                        tsne_results[len_stu:, 1],
+                        label=label_class_name1,
+                        marker='v')
+            plt.legend()
+            plt.savefig(os.path.join('./figs/professionality/MTL/', label_class_name0.split('_')[0]+'.png'),
+                        bbox_inches='tight')
+            # plt.show()
+        except:
+            pass
+
+
+def plot_tsne_pronun(embeddings, labels, le):
+
+    markers = ['.', ',', 'o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
+    marker_obj = itertools.cycle(markers)
+
     tsne = TSNE(n_components=2, verbose=1, perplexity=30, n_iter=3000)
     tsne_results = tsne.fit_transform(embeddings)
+    # new_cmap = rand_cmap(29, type='bright', first_color_black=True, last_color_black=False, verbose=False)
+    palette = np.array(sns.hls_palette(54, l=.4, s=.8))
+
     plt.figure()
-    colors = iter(cm.rainbow(np.linspace(0, 1, 29)))
-    for ii_class in range(29):
-        plt.scatter(tsne_results[labels==ii_class,0],
-                    tsne_results[labels==ii_class,1], color=next(colors))
+
+    for ii_class in range(0, 54, 4):
+        label_class_name0 = le.inverse_transform(ii_class)
+        plt.scatter(tsne_results[labels == ii_class, 0],
+                    tsne_results[labels == ii_class, 1],
+                    # color=new_cmap(ii_class),
+                    c=palette[ii_class],
+                    label=label_class_name0.split('_')[0],
+                    marker=next(marker_obj),
+                    s=50)
+
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    for ii_class in range(0, 54, 4):
+        x = tsne_results[labels == ii_class, 0]
+        y = tsne_results[labels == ii_class, 1]
+        content = le.inverse_transform(ii_class).split('_')[0]
+        for ii_text in range(0, len(x), 5):
+            plt.annotate(content, (x[ii_text], y[ii_text]), color=palette[ii_class])
+            # plt.text(x[ii_text], y[ii_text], content, color=new_cmap(ii_class))
+
+    # # We add the labels for each digit.
+    # txts = []
+    # for ii_class in range(29):
+    #     # Position of each label.
+    #     xtext, ytext = np.median(tsne_results[labels==ii_class, :], axis=0)
+    #     content = labels_original[labels==ii_class][0]
+    #     txt = plt.text(xtext, ytext, content, fontsize=24)
+    #     # txt.set_path_effects([
+    #     #     PathEffects.Stroke(linewidth=5, foreground="w"),
+    #     #     PathEffects.Normal()])
+    #     txts.append(txt)
+
+
     plt.show()
 
 
-def embedding_frame_tsne(filename_feature, filename_list_key, filename_scaler):
-    """frame_leval embedding average precision"""
-    logger = logging.getLogger(__name__)
-
-    list_feature = pickle.load(open(filename_feature, 'rb'))
-    list_key = pickle.load(open(filename_list_key, 'rb'))
-    scaler = pickle.load(open(filename_scaler, 'rb'))
-
-    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phoneme_embedding_frame_level'
-    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phoneme_embedding_frame_level'
-    model_name = 'wide_frame_level_emb'
-
-    embedding_dim = 29
-
-    array_feature_replicated, array_labels, labels = \
-        feature_replication(list_feature=list_feature, list_key=list_key, scaler=scaler)
-
-    for ii, feature in enumerate(array_feature_replicated):
-        array_feature_replicated[ii] = featureReshape(feature, nlen=7)
-
-    np.save(file=os.path.join(path_eval, model_name + '_labels'), arr=labels)
-
-    for ii in range(1):
-        filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
-        model = load_model(filepath=filename_model)
-
-        embeddings = np.zeros((len(array_feature_replicated), embedding_dim))
-        for ii_emb, feature in enumerate(array_feature_replicated):
-            logger.info('calculating..., %s, total, %s, round, %s', ii_emb, len(array_feature_replicated), ii)
-
-            feature = np.expand_dims(feature, axis=1)
-            y_pred = model.predict_on_batch(feature)
-            embeddings[ii_emb, :] = np.mean(y_pred, axis=0)
-
-        np.save(file=os.path.join(path_eval, model_name + '_embedding_' + str(ii)), arr=embeddings)
-
-
-def embedding_classifier_tsne(filename_feature, filename_list_key, filename_scaler):
-    """calculate average precision of classifier embedding"""
-
-    list_feature_flatten_test, label_integer_test, le, scaler = \
-        load_data_embedding(filename_feature=filename_feature,
-                            filename_list_key=filename_list_key,
-                            filename_scaler=filename_scaler)
-
-    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
-    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
-
-    # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
-    configs = [[1, 1]]
-
-    for config in configs:
-        model_name = config_select(config)
-        pickle.dump(le, open(os.path.join(path_eval, model_name + '_le.pkl'), 'wb'), protocol=2)
-
-        embedding_dim = 29
-
-        for ii in range(1):
-            filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
-            model = load_model(filepath=filename_model)
-            weights = model.get_weights()
-
-            input_shape = [1, None, 80]
-            model_1_batch = model_select(config=config, input_shape=input_shape)
-            model_1_batch.compile(optimizer='adam',
-                                  loss='categorical_crossentropy',
-                                  metrics=['accuracy'])
-            model_1_batch.set_weights(weights=weights)
-
-            embeddings = np.zeros((len(list_feature_flatten_test), embedding_dim))
-            for ii_emb in range(len(list_feature_flatten_test)):
-                print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_test), 'total')
-
-                x_batch = np.expand_dims(scaler.transform(list_feature_flatten_test[ii_emb]), axis=0)
-                embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
-
-            np.save(file=os.path.join(path_eval, model_name + '_embedding_' + str(ii)), arr=embeddings)
-            np.save(file=os.path.join(path_eval, model_name + '_labels_'), arr=label_integer_test)
-
-
-def embedding_siamese_tsne(filename_feature, filename_list_key, filename_scaler):
-    """calculate average precision of siamese triplet embedding"""
-
-    list_feature_flatten_test, label_integer_test, le, scaler = \
-        load_data_embedding(filename_feature=filename_feature,
-                            filename_list_key=filename_list_key,
-                            filename_scaler=filename_scaler)
-
-    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phoneme_embedding_siamese_triplet'
-    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phoneme_embedding_siamese_triplet'
-
-    model_name = 'phone_embedding_RNN_triplet_margin08'
-
-    np.save(file=os.path.join(path_eval, model_name + '_labels'), arr=label_integer_test)
-    pickle.dump(le, open(os.path.join(path_eval, model_name + '_le.pkl'), 'wb'), protocol=2)
-
-    embedding_dim = 29
-
-    for ii in range(1):
-        filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
-        model = load_model(filepath=filename_model, compile=False)
-        model_embedding = model.get_layer('embedding')
-
-        embeddings = np.zeros((len(list_feature_flatten_test), embedding_dim))
-        for ii_emb in range(len(list_feature_flatten_test)):
-            print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_test), 'total')
-
-            x_batch = np.expand_dims(scaler.transform(list_feature_flatten_test[ii_emb]), axis=0)
-            embeddings[ii_emb, :] = model_embedding.predict_on_batch(x_batch)
-
-        np.save(file=os.path.join(path_eval, model_name + '_embedding_' + str(ii)), arr=embeddings)
-
-
 if __name__ == '__main__':
-    # teacher test set
-    filename_feature = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_test.pkl'
-    filename_list_key = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key.pkl'
-    filename_scaler = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/scaler_phn_embedding.pkl'
 
-    # student test set
-    # filename_feature = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/feature_phn_embedding_test_student.pkl'
-    # filename_list_key = '/Users/gong/Documents/MTG document/dataset/phoneEmbedding/list_key_student.pkl'
+    MTL = True
+    config = [2, 0]
+    embedding_dim = 2
+    path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
 
-    embedding_classifier_tsne(filename_feature, filename_list_key, filename_scaler)
-    # embedding_siamese_tsne(filename_feature, filename_list_key, filename_scaler)
-    # embedding_frame_tsne(filename_feature, filename_list_key, filename_scaler)
+    prefix = '_MTL' if MTL else '_2_class_teacher_student'
+    model_name = config_select(config) + prefix if embedding_dim == 2 else config_select(config)
 
-    # correlationDistanceMat()
+    le = pickle.load(open(os.path.join(path_eval, model_name + '_le.pkl'), 'rb'))
+    embedding_profess = np.load(os.path.join(path_eval, model_name + '_embedding_professionality0.npy'))
+    embedding_pronun = np.load(os.path.join(path_eval, model_name + '_embedding_pronunciation0.npy'))
+    labels = np.load(os.path.join(path_eval, model_name + '_embeddings_labels.npy'))
 
+    plot_tsne_pronun(embedding_pronun, labels, le)
+    # plot_tsne_profess(embedding_profess, labels, le)

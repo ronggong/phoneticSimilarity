@@ -10,11 +10,14 @@ import logging
 import numpy as np
 from eval_embedding import ground_truth_matrix
 from eval_embedding import eval_embeddings
+from eval_embedding import eval_embeddings_no_trim
 from data_preparation import load_data_embedding_teacher_student
 from data_preparation import feature_replication_teacher_student
 from parameters import config_select
 from models_RNN import model_select
 from keras.models import load_model
+from keras.models import Model
+from keras.layers import Dense
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 from src.audio_preprocessing import featureReshape
@@ -29,7 +32,8 @@ def embedding_classifier_ap(filename_feature_teacher,
                             filename_list_key_student,
                             filename_scaler,
                             config,
-                            val_test):
+                            val_test,
+                            MTL=False):
     """calculate average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -38,6 +42,18 @@ def embedding_classifier_ap(filename_feature_teacher,
                                             filename_feature_student=filename_feature_student,
                                             filename_list_key_student=filename_list_key_student,
                                             filename_scaler=filename_scaler)
+
+    labels = le.inverse_transform(label_integer_val)
+    # combine teacher and student label to the same one
+    phn_set = list(set([l.split('_')[0] for l in labels]))
+    for ii in range(len(phn_set)):
+        indices_phn = [i for i, s in enumerate(labels) if phn_set[ii] == s.split('_')[0]]
+        label_integer_val[indices_phn] = ii
+    index_teacher = [ii for ii in range(len(label_integer_val)) if 'teacher' in labels[ii]]
+    index_student = [ii for ii in range(len(label_integer_val)) if 'student' in labels[ii]]
+
+    print('index_teacher min max', min(index_teacher), max(index_teacher))
+    print('index_student min max', min(index_student), max(index_student))
 
     path_model = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
     path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
@@ -49,18 +65,33 @@ def embedding_classifier_ap(filename_feature_teacher,
     model_name = config_select(config)
 
     list_ap = []
-    embedding_dim = 54
+    embedding_dim = 27
+
+    prefix = '_MTL' if MTL else '_27_class'
 
     for ii in range(5):
-        filename_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
+        filename_model = os.path.join(path_model, model_name + prefix + '_' + str(ii) + '.h5')
         model = load_model(filepath=filename_model)
         weights = model.get_weights()
 
         input_shape = [1, None, 80]
-        model_1_batch = model_select(config=config, input_shape=input_shape, output_shape=embedding_dim)
-        model_1_batch.compile(optimizer='adam',
-                              loss='categorical_crossentropy',
-                              metrics=['accuracy'])
+        x, input = model_select(config=config, input_shape=input_shape)
+
+        if MTL:
+            pronun_out = Dense(embedding_dim, activation='softmax', name='pronunciation')(x)
+            profess_out = Dense(2, activation='softmax', name='professionality')(x)
+            model_1_batch = Model(inputs=input, outputs=[pronun_out, profess_out])
+            model_1_batch.compile(optimizer='adam',
+                                  loss='categorical_crossentropy',
+                                  loss_weights=[0.5, 0.5])
+        else:
+            outputs = Dense(embedding_dim, activation='softmax')(x)
+            model_1_batch = Model(inputs=input, outputs=outputs)
+
+            model_1_batch.compile(optimizer='adam',
+                                  loss='categorical_crossentropy',
+                                  metrics=['accuracy'])
+
         model_1_batch.set_weights(weights=weights)
 
         embeddings = np.zeros((len(list_feature_flatten_val), embedding_dim))
@@ -68,20 +99,27 @@ def embedding_classifier_ap(filename_feature_teacher,
             print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
 
             x_batch = np.expand_dims(scaler.transform(list_feature_flatten_val[ii_emb]), axis=0)
-            embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+            if MTL:
+                embeddings[ii_emb, :], _ = model_1_batch.predict_on_batch(x_batch)
+            else:
+                embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
 
         # dist_mat = distance_matrix_embedding_classifier(embeddings)
 
         dist_mat = (2.0 - squareform(pdist(embeddings, 'cosine')))/2.0
         gt_mat = ground_truth_matrix(label_integer_val)
 
+        # we only compare teacher to student embeddings
+        dist_mat = dist_mat[:min(index_student), min(index_student):]
+        gt_mat = gt_mat[:min(index_student), min(index_student):]
+
         np.save(file=os.path.join(path_eval, 'dist_mat_' + 'teacher_student_' + str(ii)), arr=dist_mat)
 
-        ap = eval_embeddings(dist_mat=dist_mat, gt_mat=gt_mat)
+        ap = eval_embeddings_no_trim(dist_mat=dist_mat, gt_mat=gt_mat)
 
         list_ap.append(ap)
 
-    post_fix = '_teacher_student' if val_test == 'val' else '_teacher_extra_student'
+    post_fix = prefix+'_27_class' if val_test == 'val' else prefix + '_27_class_extra_student'
 
     filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
 
@@ -246,8 +284,9 @@ if __name__ == '__main__':
                                 filename_feature_student,
                                 filename_list_key_student,
                                 filename_scaler,
-                                config=[2, 1],
-                                val_test='test')
+                                config=[2, 0],
+                                val_test='test',
+                                MTL=True)
         #
         # embedding_frame_ap(filename_feature_teacher,
         #                    filename_list_key_teacher,
@@ -265,3 +304,15 @@ if __name__ == '__main__':
         #                      filename_scaler,
         #                      model_name,
         #                      val_test='test')
+    elif val_test == 'val':
+        configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+        for config in configs:
+            embedding_classifier_ap(filename_feature_teacher,
+                                    filename_list_key_teacher,
+                                    filename_feature_student,
+                                    filename_list_key_student,
+                                    filename_scaler,
+                                    config=config,
+                                    val_test='val',
+                                    MTL=True)
+

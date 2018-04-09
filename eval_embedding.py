@@ -75,6 +75,19 @@ def eval_embeddings(dist_mat, gt_mat):
     return ap
 
 
+def eval_embeddings_no_trim(dist_mat, gt_mat):
+    """
+    average precision score
+    :param dist_mat:
+    :param gt_mat:
+    :return:
+    """
+    assert dist_mat.shape == gt_mat.shape
+    ap = average_precision_score(y_true=np.squeeze(np.abs(gt_mat)),
+                                 y_score=np.squeeze(np.abs(dist_mat)),
+                                 average='weighted')
+    return ap
+
 def embedding_classifier_ap(filename_feature, filename_list_key, filename_scaler):
     """calculate average precision of classifier embedding"""
 

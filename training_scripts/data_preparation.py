@@ -99,7 +99,7 @@ def load_data_embedding_teacher_student(filename_feature_teacher,
     list_feature_flatten_student, list_key_flatten_student = \
         featureFlatten(list_feature_student, list_key_student, '_student')
 
-    list_feature_flatten = list_feature_flatten_teacher+ list_feature_flatten_student
+    list_feature_flatten = list_feature_flatten_teacher + list_feature_flatten_student
     list_key_flatten = list_key_flatten_teacher + list_key_flatten_student
 
     # encode the label to integer
