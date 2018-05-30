@@ -78,7 +78,7 @@ if __name__ == '__main__':
     #
     # for train_index, val_index in folds5_split_indices:
 
-    configs = [[1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+    configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
     for config in configs:
 

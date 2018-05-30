@@ -10,6 +10,8 @@ from keras import backend as K
 from keras.callbacks import EarlyStopping
 from keras.callbacks import CSVLogger
 from keras.callbacks import ModelCheckpoint
+from attention import Attention
+from attentionWithContext import AttentionWithContext
 
 import numpy as np
 
@@ -28,9 +30,11 @@ def embedding_RNN_1_lstm(input_shape):
     input = Input(batch_shape=input_shape)
 
     if device == 'CPU':
-        x = Bidirectional(LSTM(units=32, return_sequences=False))(input)
+        x = Bidirectional(LSTM(units=32, return_sequences=True))(input)
     else:
-        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(input)
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(input)
+
+    x = AttentionWithContext()(x)
 
     return x, input
 
