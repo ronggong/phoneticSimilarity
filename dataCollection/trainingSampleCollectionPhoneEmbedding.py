@@ -191,7 +191,6 @@ def getTeacherStudentRecordings():
     trainNacta2017_teacher, trainNacta_teacher, trainSepa_teacher, trainPrimarySchool_teacher = getTeacherRecordings()
     valPrimarySchool_student, trainPrimarySchool_student = getStudentRecordings()
 
-
     dic_pho_embedding_nacta2017_teacher = dumpFeaturePho(wav_path=nacta2017_wav_path,
                                                          textgrid_path=nacta2017_textgrid_path,
                                                          recordings=trainNacta2017_teacher,

@@ -84,8 +84,7 @@ def getTeacherRecordings():
                  ['danAll', 'zhuangyuanmei_zhenzhushan'],
                  ['danAll', 'zhuangyuanmei_zinari'],
                  ['danAll', 'wangjiangting_zhijianta'],
-                 ['danAll', 'wangjiangting_dushoukong']
-                 ]
+                 ['danAll', 'wangjiangting_dushoukong']]
 
     # train dataset primary school
     # train dataset primary school

@@ -42,8 +42,8 @@ def embedding_classifier_ap(filename_feature_teacher,
                                             filename_list_key_student=filename_list_key_student,
                                             filename_scaler=filename_scaler)
 
-    path_model = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
-    path_eval = '/Users/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
+    path_model = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/models/phone_embedding_classifier'
+    path_eval = '/home/gong/Documents/pycharmProjects/phoneticSimilarity/eval/phone_embedding_classifier'
 
     # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
     # configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
@@ -95,10 +95,17 @@ def embedding_classifier_ap(filename_feature_teacher,
         list_gt = []
         array_ap_phn = np.zeros((27,))
         cols = []
+        list_ratio_tea_stu = []
         for ii_class in range(27):
             # teacher student pair class index
             idx_ii_class = np.where(np.logical_or(label_integer_val == 2*ii_class,
                                                   label_integer_val == 2*ii_class+1))[0]
+
+            idx_ii_class_stu = len(np.where(label_integer_val == 2*ii_class)[0])
+            idx_ii_class_tea = len(np.where(label_integer_val == 2*ii_class+1)[0])
+
+            # ratio of teacher's samples
+            list_ratio_tea_stu.append(idx_ii_class_tea/float(idx_ii_class_tea+idx_ii_class_stu))
 
             dist_mat = (2.0 - squareform(pdist(embeddings[idx_ii_class], 'cosine')))/2.0
             labels_ii_class = [label_integer_val[idx] for idx in idx_ii_class]
@@ -118,6 +125,8 @@ def embedding_classifier_ap(filename_feature_teacher,
             cols.append(le.inverse_transform(2*ii_class).split('_')[0])
             array_ap_phn[ii_class] = ap_phn
 
+            print(list_ratio_tea_stu)
+
         array_dist = np.concatenate(list_dist)
         array_gt = np.concatenate(list_gt)
 
@@ -125,7 +134,7 @@ def embedding_classifier_ap(filename_feature_teacher,
 
         list_ap.append(ap)
 
-        array_ap_phn_5_runs[ii-1, :] = array_ap_phn
+        array_ap_phn_5_runs[ii, :] = array_ap_phn
 
     post_fix = prefix+'_2_class' if val_test == 'val' else prefix+'_2_class_extra_student'
 
@@ -138,8 +147,8 @@ def embedding_classifier_ap(filename_feature_teacher,
     # organize the Dataframe
     ap_phn_mean = np.mean(array_ap_phn_5_runs, axis=0)
     ap_phn_std = np.std(array_ap_phn_5_runs, axis=0)
-    ap_phn_mean_std = pd.DataFrame(np.transpose(np.vstack((ap_phn_mean, ap_phn_std))),
-                                   columns=['mean', 'std'],
+    ap_phn_mean_std = pd.DataFrame(np.transpose(np.vstack((ap_phn_mean, ap_phn_std, list_ratio_tea_stu))),
+                                   columns=['mean', 'std', 'ratio'],
                                    index=cols)
 
     ap_phn_mean_std = ap_phn_mean_std.sort_values(by='mean')
@@ -328,7 +337,7 @@ def embedding_siamese_ap(filename_feature_teacher,
 
 
 if __name__ == '__main__':
-    val_test = 'test'
+    val_test = 'val'
 
     path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
 

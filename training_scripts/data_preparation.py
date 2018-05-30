@@ -16,6 +16,7 @@ from phonemeMap import dic_pho_label_teacher_student
 import logging
 logging.basicConfig(level=logging.INFO)
 
+
 def load_data(filename_labels_train_validation_set):
 
     # load training and validation data

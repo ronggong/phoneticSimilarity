@@ -88,6 +88,7 @@ def eval_embeddings_no_trim(dist_mat, gt_mat):
                                  average='weighted')
     return ap
 
+
 def embedding_classifier_ap(filename_feature, filename_list_key, filename_scaler):
     """calculate average precision of classifier embedding"""
 

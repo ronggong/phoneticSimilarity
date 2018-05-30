@@ -94,6 +94,8 @@ def embedding_classifier_ap(filename_feature_teacher,
 
         model_1_batch.set_weights(weights=weights)
 
+        print(model_1_batch.summary())
+
         embeddings = np.zeros((len(list_feature_flatten_val), embedding_dim))
         for ii_emb in range(len(list_feature_flatten_val)):
             print('calculate', ii, 'run time', ii_emb, 'embedding', len(list_feature_flatten_val), 'total')
@@ -259,7 +261,7 @@ def embedding_siamese_ap(filename_feature_teacher,
 
 
 if __name__ == '__main__':
-    val_test = 'test'
+    val_test = 'val'
 
     path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
 
