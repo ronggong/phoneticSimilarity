@@ -10,6 +10,7 @@ from data_preparation import load_data_embedding_teacher_student
 from data_preparation import feature_replication_teacher_student
 from parameters import config_select
 from models_RNN import model_select
+from models_RNN import model_select_attention
 from keras.models import load_model
 from keras.models import Model
 from keras.layers import Dense
@@ -18,6 +19,8 @@ from scipy.spatial.distance import squareform
 from src.audio_preprocessing import featureReshape
 from sklearn.metrics import average_precision_score
 from src.utilFunctions import get_unique_label
+from attention import Attention
+from attentionWithContext import AttentionWithContext
 
 from training_scripts.models_siamese_tripletloss import embedding_1_lstm_base
 from training_scripts.models_siamese_tripletloss import embedding_2_lstm_1_dense_base
@@ -32,7 +35,8 @@ def embedding_classifier_ap(filename_feature_teacher,
                             embedding_dim,
                             config,
                             val_test,
-                            MTL=False):
+                            MTL=False,
+                            attention=False):
     """calculate teacher student pairs average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -50,18 +54,25 @@ def embedding_classifier_ap(filename_feature_teacher,
 
     prefix = '_MTL' if MTL else '_2_class_teacher_student'
     model_name = config_select(config) + prefix if embedding_dim == 2 else config_select(config)
+    attention_str = 'attention_' if attention else ''
 
     list_ap = []
     # average precision of each phone
     array_ap_phn_5_runs = np.zeros((5, 27))
     for ii in range(5):
         print('run time', ii)
-        filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
-        model = load_model(filepath=filename_model)
+        filename_model = os.path.join(path_model, model_name + '_' + attention_str + str(ii) + '.h5')
+        if attention:
+            model = load_model(filepath=filename_model, custom_objects={'Attention': Attention(return_attention=True)})
+        else:
+            model = load_model(filepath=filename_model)
         weights = model.get_weights()
 
         input_shape = [1, None, 80]
-        x, input = model_select(config=config, input_shape=input_shape)
+        if attention:
+            x, input, _ = model_select_attention(config=config, input_shape=input_shape)
+        else:
+            x, input = model_select(config=config, input_shape=input_shape)
 
         if MTL:
             pronun_out = Dense(27, activation='softmax', name='pronunciation')(x)
@@ -85,9 +96,14 @@ def embedding_classifier_ap(filename_feature_teacher,
 
             x_batch = np.expand_dims(scaler.transform(list_feature_flatten_val[ii_emb]), axis=0)
             if MTL:
-                _, embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+                _, out = model_1_batch.predict_on_batch(x_batch)
             else:
-                embeddings[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
+                out = model_1_batch.predict_on_batch(x_batch)
+
+            if attention:
+                embeddings[ii_emb, :] = out[0, :]
+            else:
+                embeddings[ii_emb, :] = out
 
         # dist_mat = distance_matrix_embedding_classifier(embeddings)
 
@@ -138,7 +154,7 @@ def embedding_classifier_ap(filename_feature_teacher,
 
     post_fix = prefix+'_2_class' if val_test == 'val' else prefix+'_2_class_extra_student'
 
-    filename_eval = os.path.join(path_eval, model_name + post_fix + '.csv')
+    filename_eval = os.path.join(path_eval, model_name + post_fix + attention_str + '.csv')
 
     with open(filename_eval, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', )
@@ -153,7 +169,7 @@ def embedding_classifier_ap(filename_feature_teacher,
 
     ap_phn_mean_std = ap_phn_mean_std.sort_values(by='mean')
     ap_phn_mean_std.to_csv(os.path.join(path_eval,
-                                        model_name + post_fix + '_phn_mean_std.csv'))
+                                        model_name + post_fix + attention_str + '_phn_mean_std.csv'))
 
 
 def embedding_frame_ap(filename_feature_teacher,
@@ -337,7 +353,7 @@ def embedding_siamese_ap(filename_feature_teacher,
 
 
 if __name__ == '__main__':
-    val_test = 'val'
+    val_test = 'test'
 
     path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
 
@@ -375,7 +391,8 @@ if __name__ == '__main__':
                                 embedding_dim=2,
                                 config=[2, 0],
                                 val_test=val_test,
-                                MTL=True)
+                                MTL=True,
+                                attention=True)
 
         # embedding_frame_ap(filename_feature_teacher,
         #                    filename_list_key_teacher,
@@ -414,7 +431,8 @@ if __name__ == '__main__':
         #                      embedding_dim=2,
         #                      val_test='test')
     else:
-        configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+        # configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+        configs = [[1, 0]]
         for config in configs:
             embedding_classifier_ap(filename_feature_teacher,
                                     filename_list_key_teacher,
@@ -424,4 +442,5 @@ if __name__ == '__main__':
                                     embedding_dim=2,
                                     config=config,
                                     val_test=val_test,
-                                    MTL=True)
+                                    MTL=False,
+                                    attention=True)

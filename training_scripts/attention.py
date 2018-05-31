@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from keras import backend as K, initializers, regularizers, constraints
 from keras.engine.topology import Layer
 
@@ -13,7 +14,8 @@ def dot_product(x, kernel):
     """
     if K.backend() == 'tensorflow':
         # todo: check that this is correct
-        return K.squeeze(K.dot(x, K.expand_dims(kernel)), axis=-1)
+        kernel = K.expand_dims(kernel)
+        return K.squeeze(K.dot(x, kernel), axis=-1)
     else:
         return K.dot(x, kernel)
 
@@ -74,7 +76,7 @@ class Attention(Layer):
                                  regularizer=self.W_regularizer,
                                  constraint=self.W_constraint)
         if self.bias:
-            self.b = self.add_weight((input_shape[1],),
+            self.b = self.add_weight((1,),
                                      initializer='zero',
                                      name='{}_b'.format(self.name),
                                      regularizer=self.b_regularizer,
@@ -89,7 +91,7 @@ class Attention(Layer):
         return None
 
     def call(self, x, mask=None):
-        eij = dot_product(x, self.W)
+        eij = dot_product(x, self.W)  # (samples, steps)
 
         if self.bias:
             eij += self.b
@@ -108,7 +110,10 @@ class Attention(Layer):
         # a /= K.cast(K.sum(a, axis=1, keepdims=True), K.floatx())
         a /= K.cast(K.sum(a, axis=1, keepdims=True) + K.epsilon(), K.floatx())
 
-        weighted_input = x * K.expand_dims(a)
+        a_expand = K.expand_dims(a)
+
+        # element wise
+        weighted_input = x * a_expand
 
         result = K.sum(weighted_input, axis=1)
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from keras import backend as K, initializers, regularizers, constraints
 from keras.engine.topology import Layer
 
@@ -44,9 +45,10 @@ class AttentionWithContext(Layer):
     def __init__(self,
                  W_regularizer=None, u_regularizer=None, b_regularizer=None,
                  W_constraint=None, u_constraint=None, b_constraint=None,
-                 bias=True, **kwargs):
+                 bias=True, return_attention=False, **kwargs):
 
         self.supports_masking = True
+        self.return_attention = return_attention
         self.init = initializers.get('glorot_uniform')
 
         self.W_regularizer = regularizers.get(W_regularizer)
@@ -110,7 +112,15 @@ class AttentionWithContext(Layer):
 
         a = K.expand_dims(a)
         weighted_input = x * a
-        return K.sum(weighted_input, axis=1)
+        result = K.sum(weighted_input, axis=1)
+
+        if self.return_attention:
+            return [result, a]
+        return result
 
     def compute_output_shape(self, input_shape):
-        return input_shape[0], input_shape[-1]
+        if self.return_attention:
+            return [(input_shape[0], input_shape[-1]),
+                    (input_shape[0], input_shape[1])]
+        else:
+            return input_shape[0], input_shape[-1]

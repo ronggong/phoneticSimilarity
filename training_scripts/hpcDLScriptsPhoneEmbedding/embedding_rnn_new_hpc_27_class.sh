@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -J rnn_27
+#SBATCH -J att_27
 #SBATCH -p high
 #SBATCH -N 1
 #SBATCH --workdir=/homedtic/rgong/phoneEmbeddingModelsTraining
@@ -13,8 +13,8 @@
 
 # Output/Error Text
 # ----------------
-#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_27_class.%N.%J.%u.out # STDOUT
-#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_27_class.%N.%J.%u.err # STDERR
+#SBATCH -o /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_27_class_att.%N.%J.%u.out # STDOUT
+#SBATCH -e /homedtic/rgong/phoneEmbeddingModelsTraining/out/emb_rnn_27_class_att.%N.%J.%u.err # STDERR
 
 module load Tensorflow/1.5.0-foss-2017a-Python-2.7.12
 

@@ -23,33 +23,35 @@ if __name__ == '__main__':
     input_shape = (batch_size, None, 80)
     output_shape = 2
     patience = 15
+    attention = True
+    attention_str = "attention_" if attention else ""
 
-    # path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
-    #
-    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
-    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
-    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
-    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-    # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
-    #
-    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
-    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
-    #
-    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
 
     filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
     filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
     filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
     filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-
     filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
 
     filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
     filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
 
-    path_model = '../../temp'
+    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    # path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    #
+    # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+    #
+    # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+    #
+    # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+    #
+    # path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
                 load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
@@ -77,8 +79,10 @@ if __name__ == '__main__':
     train_index, val_index = pickle.load(open(filename_data_splits, 'rb'))
     #
     # for train_index, val_index in folds5_split_indices:
-
-    configs = [[1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+    if attention:
+        configs = [[1, 0]]
+    else:
+        configs = [[1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
     for config in configs:
 
@@ -88,8 +92,8 @@ if __name__ == '__main__':
             model_name += '_2_class'
 
         for ii in range(5):
-            file_path_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + str(ii) + '.h5')
-            file_path_log = os.path.join(path_model, 'log', model_name + '_teacher_student' + '_' + str(ii) + '.csv')
+            file_path_model = os.path.join(path_model, model_name + '_teacher_student' + '_' + attention_str + str(ii) + '.h5')
+            file_path_log = os.path.join(path_model, 'log', model_name + '_teacher_student' + '_' + attention_str + str(ii) + '.csv')
 
             list_feature_fold_train = [scaler.transform(list_feature_flatten[ii]) for ii in train_index]
             labels_integer_fold_train = labels_integer[train_index]
@@ -112,7 +116,8 @@ if __name__ == '__main__':
                                       file_path_model=file_path_model,
                                       filename_log=file_path_log,
                                       patience=patience,
-                                      config=config)
+                                      config=config,
+                                      attention=attention)
 
         # train_embedding_RNN(X_train=X_train,
         #                     X_val=X_val,

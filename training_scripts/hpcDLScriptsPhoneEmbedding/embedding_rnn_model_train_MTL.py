@@ -23,6 +23,8 @@ if __name__ == '__main__':
     input_shape = (batch_size, None, 80)
     patience = 15
     output_shape = [27, 2]
+    attention = True
+    attention_str = "attention_" if attention else ""
 
     path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
 
@@ -85,16 +87,18 @@ if __name__ == '__main__':
     train_index, val_index = pickle.load(open(filename_data_splits, 'rb'))
     #
     # for train_index, val_index in folds5_split_indices:
-
-    configs = [[1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
+    if attention:
+        configs = [[2, 0]]
+    else:
+        configs = [[1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
     for config in configs:
 
         model_name = config_select(config=config)
 
         for ii in range(5):
-            file_path_model = os.path.join(path_model, model_name + '_MTL' + '_' + str(ii) + '.h5')
-            file_path_log = os.path.join(path_model, 'log', model_name + '_MTL' + '_' + str(ii) + '.csv')
+            file_path_model = os.path.join(path_model, model_name + '_MTL' + '_' + attention_str + str(ii) + '.h5')
+            file_path_log = os.path.join(path_model, 'log', model_name + '_MTL' + '_' + attention_str + str(ii) + '.csv')
 
             list_feature_fold_train = [scaler.transform(list_feature_flatten[ii]) for ii in train_index]
             labels_integer_phn_fold_train = labels_integer_phn[train_index]
@@ -123,5 +127,6 @@ if __name__ == '__main__':
                                           file_path_model=file_path_model,
                                           filename_log=file_path_log,
                                           patience=patience,
-                                          config=config)
+                                          config=config,
+                                          attention=attention)
 

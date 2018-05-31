@@ -30,14 +30,26 @@ def embedding_RNN_1_lstm(input_shape):
     input = Input(batch_shape=input_shape)
 
     if device == 'CPU':
+        x = Bidirectional(LSTM(units=32, return_sequences=False))(input)
+    else:
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(input)
+
+    return x, input
+
+
+def embedding_RNN_1_lstm_attention(input_shape):
+    device = device_lib.list_local_devices()[0].device_type
+
+    input = Input(batch_shape=input_shape)
+
+    if device == 'CPU':
         x = Bidirectional(LSTM(units=32, return_sequences=True))(input)
     else:
         x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(input)
 
-    x = AttentionWithContext()(x)
+    x, attention = Attention(return_attention=True)(x)
 
-    return x, input
-
+    return x, input, attention
 
 def embedding_RNN_1_lstm_1_dense(input_shape):
 
@@ -71,6 +83,24 @@ def embedding_RNN_2_lstm(input_shape):
         x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(x)
 
     return x, input
+
+
+def embedding_RNN_2_lstm_attention(input_shape):
+
+    device = device_lib.list_local_devices()[0].device_type
+
+    input = Input(batch_shape=input_shape)
+
+    if device == 'CPU':
+        x = Bidirectional(LSTM(units=32, return_sequences=True))(input)
+        x = Bidirectional(LSTM(units=32, return_sequences=True))(x)
+    else:
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(input)
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(x)
+
+    x, attention = Attention(return_attention=True)(x)
+
+    return x, input, attention
 
 
 def embedding_RNN_2_lstm_1_dense(input_shape):
@@ -309,6 +339,16 @@ def model_select(config, input_shape):
     return x
 
 
+def model_select_attention(config, input_shape):
+    if config[0] == 1 and config[1] == 0:
+        x = embedding_RNN_1_lstm_attention(input_shape=input_shape)
+    elif config[0] == 2 and config[1] == 0:
+        x = embedding_RNN_2_lstm_attention(input_shape=input_shape)
+    else:
+        raise ValueError
+    return x
+
+
 def train_embedding_RNN_batch(list_feature_fold_train,
                               labels_fold_train,
                               list_feature_fold_val,
@@ -319,7 +359,8 @@ def train_embedding_RNN_batch(list_feature_fold_train,
                               file_path_model,
                               filename_log,
                               patience,
-                              config):
+                              config,
+                              attention):
 
     print("organizing features...")
 
@@ -351,7 +392,10 @@ def train_embedding_RNN_batch(list_feature_fold_train,
                                           list_y_batch=list_y_batch_val,
                                           iter_times=iter_times_val)
 
-    x, input = model_select(config=config, input_shape=input_shape)
+    if attention:
+        x, input, _ = model_select_attention(config=config, input_shape=input_shape)
+    else:
+        x, input = model_select(config=config, input_shape=input_shape)
 
     outputs = Dense(output_shape, activation='softmax')(x)
     model = Model(inputs=input, outputs=outputs)
@@ -387,7 +431,8 @@ def train_embedding_RNN_batch_MTL(list_feature_fold_train,
                                   file_path_model,
                                   filename_log,
                                   patience,
-                                  config):
+                                  config,
+                                  attention):
 
     print("organizing features...")
 
@@ -419,7 +464,10 @@ def train_embedding_RNN_batch_MTL(list_feature_fold_train,
                                           list_y_batch=list_y_batch_val,
                                           iter_times=iter_times_val)
 
-    x, input = model_select(config=config, input_shape=input_shape)
+    if attention:
+        x, input, _ = model_select_attention(config=config, input_shape=input_shape)
+    else:
+        x, input = model_select(config=config, input_shape=input_shape)
 
     pronun_out = Dense(output_shape[0], activation='softmax', name='pronunciation')(x)
     profess_out = Dense(output_shape[1], activation='softmax', name='professionality')(x)
