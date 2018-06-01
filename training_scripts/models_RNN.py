@@ -5,6 +5,10 @@ from keras.layers import LSTM
 from keras.layers import CuDNNLSTM
 from keras.layers import Bidirectional
 from keras.layers import Dense
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Permute
+from keras.layers import Reshape
 from keras.losses import categorical_crossentropy
 from keras import backend as K
 from keras.callbacks import EarlyStopping
@@ -23,16 +27,38 @@ from feature_generator import sort_feature_by_seq_length
 from feature_generator import batch_grouping
 
 
-def embedding_RNN_1_lstm(input_shape):
+def conv_module(conv, input_shape, input):
+    if conv:
+        x = Reshape((-1, input_shape[2]) + (1,))(input)
+        x = Conv2D(filters=8, kernel_size=(1, 3), activation="relu")(x)
+        x = Conv2D(filters=8, kernel_size=(1, 3), activation="relu")(x)
+        x = Conv2D(filters=8, kernel_size=(1, 3), activation="relu")(x)
+        x = MaxPooling2D(pool_size=(1, 3))(x)
+
+        x = Conv2D(filters=16, kernel_size=(1, 3), activation="relu")(x)
+        x = Conv2D(filters=16, kernel_size=(1, 3), activation="relu")(x)
+        x = Conv2D(filters=16, kernel_size=(1, 3), activation="relu")(x)
+        x = MaxPooling2D(pool_size=(1, 3))(x)
+
+        shape = K.int_shape(x)
+        x = Reshape((-1, shape[2] * shape[3]))(x)
+    else:
+        x = input
+    return x
+
+
+def embedding_RNN_1_lstm(input_shape, conv=False):
 
     device = device_lib.list_local_devices()[0].device_type
 
     input = Input(batch_shape=input_shape)
 
+    x = conv_module(conv, input_shape, input)
+
     if device == 'CPU':
-        x = Bidirectional(LSTM(units=32, return_sequences=False))(input)
+        x = Bidirectional(LSTM(units=32, return_sequences=False))(x)
     else:
-        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(input)
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(x)
 
     return x, input
 
@@ -50,6 +76,7 @@ def embedding_RNN_1_lstm_attention(input_shape):
     x, attention = Attention(return_attention=True)(x)
 
     return x, input, attention
+
 
 def embedding_RNN_1_lstm_1_dense(input_shape):
 
@@ -69,17 +96,19 @@ def embedding_RNN_1_lstm_1_dense(input_shape):
     return x, input
 
 
-def embedding_RNN_2_lstm(input_shape):
+def embedding_RNN_2_lstm(input_shape, conv=False):
 
     device = device_lib.list_local_devices()[0].device_type
 
     input = Input(batch_shape=input_shape)
 
+    x = conv_module(conv, input_shape, input)
+
     if device == 'CPU':
-        x = Bidirectional(LSTM(units=32, return_sequences=True))(input)
+        x = Bidirectional(LSTM(units=32, return_sequences=True))(x)
         x = Bidirectional(LSTM(units=32, return_sequences=False))(x)
     else:
-        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(input)
+        x = Bidirectional(CuDNNLSTM(units=32, return_sequences=True))(x)
         x = Bidirectional(CuDNNLSTM(units=32, return_sequences=False))(x)
 
     return x, input
@@ -314,13 +343,13 @@ def train_embedding_RNN(X_train,
         X_train, y_train = shuffleFeaturesLabelsInUnison(features=X_train, labels=y_train)
 
 
-def model_select(config, input_shape):
+def model_select(config, input_shape, conv):
     if config[0] == 1 and config[1] == 0:
-        x = embedding_RNN_1_lstm(input_shape=input_shape)
+        x = embedding_RNN_1_lstm(input_shape=input_shape, conv=conv)
     elif config[0] == 1 and config[1] == 1:
         x = embedding_RNN_1_lstm_1_dense(input_shape=input_shape)
     elif config[0] == 2 and config[1] == 0:
-        x = embedding_RNN_2_lstm(input_shape=input_shape)
+        x = embedding_RNN_2_lstm(input_shape=input_shape, conv=conv)
     elif config[0] == 2 and config[1] == 1:
         x = embedding_RNN_2_lstm_1_dense(input_shape=input_shape)
     elif config[0] == 2 and config[1] == 2:
@@ -360,7 +389,9 @@ def train_embedding_RNN_batch(list_feature_fold_train,
                               filename_log,
                               patience,
                               config,
-                              attention):
+                              attention,
+                              dense,
+                              conv):
 
     print("organizing features...")
 
@@ -395,7 +426,10 @@ def train_embedding_RNN_batch(list_feature_fold_train,
     if attention:
         x, input, _ = model_select_attention(config=config, input_shape=input_shape)
     else:
-        x, input = model_select(config=config, input_shape=input_shape)
+        x, input = model_select(config=config, input_shape=input_shape, conv=conv)
+
+    if dense:
+        x = Dense(32)(x)
 
     outputs = Dense(output_shape, activation='softmax')(x)
     model = Model(inputs=input, outputs=outputs)
@@ -432,7 +466,9 @@ def train_embedding_RNN_batch_MTL(list_feature_fold_train,
                                   filename_log,
                                   patience,
                                   config,
-                                  attention):
+                                  attention,
+                                  dense=False,
+                                  conv=False):
 
     print("organizing features...")
 
@@ -467,9 +503,13 @@ def train_embedding_RNN_batch_MTL(list_feature_fold_train,
     if attention:
         x, input, _ = model_select_attention(config=config, input_shape=input_shape)
     else:
-        x, input = model_select(config=config, input_shape=input_shape)
+        x, input = model_select(config=config, input_shape=input_shape, conv=conv)
 
     pronun_out = Dense(output_shape[0], activation='softmax', name='pronunciation')(x)
+
+    if dense:
+        x = Dense(units=32)(x)
+
     profess_out = Dense(output_shape[1], activation='softmax', name='professionality')(x)
 
     model = Model(inputs=input, outputs=[pronun_out, profess_out])

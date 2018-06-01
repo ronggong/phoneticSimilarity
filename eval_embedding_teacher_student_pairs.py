@@ -36,7 +36,8 @@ def embedding_classifier_ap(filename_feature_teacher,
                             config,
                             val_test,
                             MTL=False,
-                            attention=False):
+                            attention=False,
+                            dense=False):
     """calculate teacher student pairs average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -53,15 +54,15 @@ def embedding_classifier_ap(filename_feature_teacher,
     # configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
     prefix = '_MTL' if MTL else '_2_class_teacher_student'
-    model_name = config_select(config) + prefix if embedding_dim == 2 else config_select(config)
-    attention_str = 'attention_' if attention else ''
+    model_name = config_select(config) + prefix if embedding_dim == 32 else config_select(config)
+    attention_dense_str = 'dense_' if attention else ''
 
     list_ap = []
     # average precision of each phone
     array_ap_phn_5_runs = np.zeros((5, 27))
     for ii in range(5):
         print('run time', ii)
-        filename_model = os.path.join(path_model, model_name + '_' + attention_str + str(ii) + '.h5')
+        filename_model = os.path.join(path_model, model_name + '_' + attention_dense_str + str(ii) + '.h5')
         if attention:
             model = load_model(filepath=filename_model, custom_objects={'Attention': Attention(return_attention=True)})
         else:
@@ -75,14 +76,22 @@ def embedding_classifier_ap(filename_feature_teacher,
             x, input = model_select(config=config, input_shape=input_shape)
 
         if MTL:
-            pronun_out = Dense(27, activation='softmax', name='pronunciation')(x)
-            profess_out = Dense(embedding_dim, activation='softmax', name='professionality')(x)
+            if dense:
+                pronun_out = x
+                profess_out = Dense(32)(x)
+            else:
+                pronun_out = Dense(27, activation='softmax', name='pronunciation')(x)
+                profess_out = Dense(embedding_dim, activation='softmax', name='professionality')(x)
+
             model_1_batch = Model(inputs=input, outputs=[pronun_out, profess_out])
             model_1_batch.compile(optimizer='adam',
                                   loss='categorical_crossentropy',
                                   loss_weights=[0.5, 0.5])
         else:
-            outputs = Dense(embedding_dim, activation='softmax')(x)
+            if dense:
+                outputs = x
+            else:
+                outputs = Dense(embedding_dim, activation='softmax')(x)
             model_1_batch = Model(inputs=input, outputs=outputs)
 
             model_1_batch.compile(optimizer='adam',
@@ -154,7 +163,7 @@ def embedding_classifier_ap(filename_feature_teacher,
 
     post_fix = prefix+'_2_class' if val_test == 'val' else prefix+'_2_class_extra_student'
 
-    filename_eval = os.path.join(path_eval, model_name + post_fix + attention_str + '.csv')
+    filename_eval = os.path.join(path_eval, model_name + post_fix + attention_dense_str + '.csv')
 
     with open(filename_eval, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', )
@@ -169,7 +178,7 @@ def embedding_classifier_ap(filename_feature_teacher,
 
     ap_phn_mean_std = ap_phn_mean_std.sort_values(by='mean')
     ap_phn_mean_std.to_csv(os.path.join(path_eval,
-                                        model_name + post_fix + attention_str + '_phn_mean_std.csv'))
+                                        model_name + post_fix + attention_dense_str + '_phn_mean_std.csv'))
 
 
 def embedding_frame_ap(filename_feature_teacher,
@@ -388,11 +397,11 @@ if __name__ == '__main__':
                                 filename_feature_student,
                                 filename_list_key_student,
                                 filename_scaler,
-                                embedding_dim=2,
+                                embedding_dim=32,
                                 config=[2, 0],
                                 val_test=val_test,
                                 MTL=True,
-                                attention=True)
+                                attention=False)
 
         # embedding_frame_ap(filename_feature_teacher,
         #                    filename_list_key_teacher,
