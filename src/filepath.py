@@ -1,6 +1,6 @@
 import os
 
-root_path = os.path.join(os.path.dirname(__file__),'..')
+root_path = os.path.join(os.path.dirname(__file__), '..')
 
 primarySchool_dataset_root_path = '/Users/gong/Documents/MTG document/Jingju arias/primary_school_recording'
 
@@ -24,3 +24,6 @@ kerasModels_emb_cla_path = os.path.join(root_path, 'models', 'phone_embedding_cl
 cnn_file_emb_frame_level_name = 'wide_frame_level_emb_0'
 kerasScaler_emb_frame_level_path = os.path.join(root_path, 'models', 'phone_embedding_classifier', 'scaler_phn_embedding_cla.pkl')
 kerasModels_emb_frame_level_path = os.path.join(root_path, 'models', 'phoneme_embedding_frame_level', cnn_file_emb_frame_level_name + '.h5')
+
+# phoneme wav path
+phn_wav_path = "/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/DLfM_audio_phn"
