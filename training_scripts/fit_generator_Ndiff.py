@@ -6,8 +6,8 @@ from keras.utils.data_utils import Sequence
 from keras.utils.data_utils import OrderedEnqueuer
 from keras.utils.data_utils import GeneratorEnqueuer
 
-from losses import triplet_loss
-from losses import triplet_loss_no_mean
+from training_scripts.losses import triplet_loss
+from training_scripts.losses import triplet_loss_no_mean
 
 
 def get_maximum_length(batch_size, generator_output, index):

@@ -9,9 +9,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn import preprocessing
 # from keras.utils import to_categorical
-from utilFunctions import append_or_write
-from phonemeMap import dic_pho_label
-from phonemeMap import dic_pho_label_teacher_student
+from src.utilFunctions import append_or_write
+from src.phonemeMap import dic_pho_label
+from src.phonemeMap import dic_pho_label_teacher_student
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -66,7 +66,7 @@ def load_data_embedding(filename_feature, filename_list_key, filename_scaler):
     return list_feature_flatten, label_integer, le, scaler
 
 
-def featureFlatten(list_feature, list_key, data_str = '_teacher'):
+def featureFlatten(list_feature, list_key, data_str='_teacher'):
     """flatten the feature list"""
     list_feature_flatten = []
     list_key_flatten = []
@@ -111,8 +111,62 @@ def load_data_embedding_teacher_student(filename_feature_teacher,
     return list_feature_flatten, label_integer, le, scaler
 
 
+def load_data_embedding_all(filename_feature_teacher_train,
+                            filename_feature_teacher_val,
+                            filename_feature_teacher_test,
+                            filename_list_key_teacher,
+                            filename_feature_student_train,
+                            filename_feature_student_val,
+                            filename_feature_student_test,
+                            filename_list_key_student,
+                            filename_feature_student_extra_test,
+                            filename_list_key_extra_student,
+                            filename_scaler):
+    """
+    load all data
+    """
+    list_feature_teacher_train = pickle.load(open(filename_feature_teacher_train, 'rb'))
+    list_feature_teacher_val = pickle.load(open(filename_feature_teacher_val, 'rb'))
+    list_feature_teacher_test = pickle.load(open(filename_feature_teacher_test, 'rb'))
+    list_key_teacher = pickle.load(open(filename_list_key_teacher, 'rb'))
+    list_feature_student_train = pickle.load(open(filename_feature_student_train, 'rb'))
+    list_feature_student_val = pickle.load(open(filename_feature_student_val, 'rb'))
+    list_feature_student_test = pickle.load(open(filename_feature_student_test, 'rb'))
+    list_key_student = pickle.load(open(filename_list_key_student, 'rb'))
+    list_feature_student_extra_test = pickle.load(open(filename_feature_student_extra_test, 'rb'))
+    list_key_extra_student = pickle.load(open(filename_list_key_extra_student, 'rb'))
+    scaler = pickle.load(open(filename_scaler, 'rb'))
+
+    # flatten the feature and label list
+    list_feature_flatten_teacher_train, list_key_flatten_teacher_train = \
+        featureFlatten(list_feature_teacher_train, list_key_teacher, '_teacher')
+    list_feature_flatten_teacher_val, list_key_flatten_teacher_val = \
+        featureFlatten(list_feature_teacher_val, list_key_teacher, '_teacher')
+    list_feature_flatten_teacher_test, list_key_flatten_teacher_test = \
+        featureFlatten(list_feature_teacher_test, list_key_teacher, '_teacher')
+    list_feature_flatten_student_train, list_key_flatten_student_train = \
+        featureFlatten(list_feature_student_train, list_key_student, '_student')
+    list_feature_flatten_student_val, list_key_flatten_student_val = \
+        featureFlatten(list_feature_student_val, list_key_student, '_student')
+    list_feature_flatten_student_test, list_key_flatten_student_test = \
+        featureFlatten(list_feature_student_test, list_key_student, '_student')
+    list_feature_flatten_student_extra_test, list_key_flatten_student_extra_test = \
+        featureFlatten(list_feature_student_extra_test, list_key_extra_student, '_extra_test')
+
+    list_feature_flatten = list_feature_flatten_teacher_train + list_feature_flatten_teacher_val + \
+                           list_feature_flatten_teacher_test + list_feature_flatten_student_train + \
+                           list_feature_flatten_student_val + list_feature_flatten_student_test + \
+                           list_feature_flatten_student_extra_test
+    list_key_flatten = list_key_flatten_teacher_train + list_key_flatten_teacher_val + \
+                       list_key_flatten_teacher_test + list_key_flatten_student_train + \
+                       list_key_flatten_student_val + list_key_flatten_student_test + \
+                       list_key_flatten_student_extra_test
+
+    return list_feature_flatten, list_key_flatten, scaler
+
+
 def feature_replication(list_feature, list_key, scaler):
-    from audio_preprocessing import _nbf_2D
+    from src.audio_preprocessing import _nbf_2D
     # flatten the feature and label list
     list_feature_flatten = []
     labels = []

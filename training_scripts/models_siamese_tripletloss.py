@@ -13,13 +13,13 @@ from keras.callbacks import ModelCheckpoint
 
 import numpy as np
 
-from feature_generator import generator_triplet
-from feature_generator import generator_triplet_Ndiff
-from feature_generator import calculate_num_idx_same_pairs
-from feature_generator import generator_triplet_pairs
+from training_scripts.feature_generator import generator_triplet
+from training_scripts.feature_generator import generator_triplet_Ndiff
+from training_scripts.feature_generator import calculate_num_idx_same_pairs
+from training_scripts.feature_generator import generator_triplet_pairs
 
-from data_preparation import writeValLossCsv
-from losses import triplet_loss
+from training_scripts.data_preparation import writeValLossCsv
+from training_scripts.losses import triplet_loss
 from tensorflow.python.client import device_lib
 
 
@@ -222,9 +222,9 @@ def train_embedding_siamese_Ndiff_train_val_routine(list_feature_fold_train,
             ii_epoch += 1
 
 
-from fit_generator_Ndiff import fit_generator_Ndiff
-from feature_generator import generator_triplet_Ndiff_yield_index
-from sequence_generator import tripletNdiffYieldIndexSequence
+from training_scripts.fit_generator_Ndiff import fit_generator_Ndiff
+from training_scripts.feature_generator import generator_triplet_Ndiff_yield_index
+from training_scripts.sequence_generator import tripletNdiffYieldIndexSequence
 
 
 def train_embedding_siamese_Ndiff_train_fit_generator_val_routine(list_feature_fold_train,

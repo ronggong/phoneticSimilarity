@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+python /home/gong/Documents/pycharmProjects/phoneticSimilarity/training_scripts/hpcDLScriptsPhoneEmbedding/embedding_rnn_model_train_27_class.py
+
+python /home/gong/Documents/pycharmProjects/phoneticSimilarity/training_scripts/hpcDLScriptsPhoneEmbedding/embedding_rnn_model_train_teacher_student.py

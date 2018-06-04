@@ -9,10 +9,10 @@ import pickle
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from data_preparation import load_data_embedding_teacher_student
+from training_scripts.data_preparation import load_data_embedding_teacher_student
 from keras.utils import to_categorical
-from models_RNN import train_embedding_RNN_batch
-from parameters import config_select
+from training_scripts.models_RNN import train_embedding_RNN_batch
+from src.parameters import config_select
 
 # from data_preparation import cv5foldsIndices
 # from sklearn.model_selection import train_test_split
@@ -23,44 +23,49 @@ if __name__ == '__main__':
     input_shape = (batch_size, None, 80)
     patience = 15
     output_shape = 27
-    attention = False
+    attention = True
     dense = False
     conv = True
-    if attention:
+    dropout = 0.25
+    if attention and conv and dropout:
+        attention_dense_str = "attention_conv_dropout_"
+    elif attention:
         attention_dense_str = "attention_"
     elif dense:
         attention_dense_str = "dense_"
     elif conv:
         attention_dense_str = "conv_"
+    elif dropout:
+        attention_dense_str = "dropout_"
     else:
         attention_dense_str = ""
 
-    path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
-
-    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
-    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
-    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
-    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-    filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
-
-    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
-    filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
-
-    path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
-
-    # path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+    # path_dataset = '/homedtic/rgong/phoneEmbeddingModelsTraining/dataset/'
     #
     # filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
     # filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
     # filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
     # filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
-    #
     # filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
     #
     # filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
     # filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
     #
-    # path_model = '../../temp'
+    # path_model = '/homedtic/rgong/phoneEmbeddingModelsTraining/out/'
+
+    path_dataset = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/phoneEmbedding'
+
+    filename_feature_teacher = os.path.join(path_dataset, 'feature_phn_embedding_train_teacher.pkl')
+    filename_list_key_teacher = os.path.join(path_dataset, 'list_key_teacher.pkl')
+    filename_feature_student = os.path.join(path_dataset, 'feature_phn_embedding_train_student.pkl')
+    filename_list_key_student = os.path.join(path_dataset, 'list_key_student.pkl')
+
+    filename_scaler_teacher_student = os.path.join(path_dataset, 'scaler_phn_embedding_train_teacher_student.pkl')
+
+    filename_label_encoder = os.path.join(path_dataset, 'le_phn_embedding_teacher_student.pkl')
+    filename_data_splits = os.path.join(path_dataset, 'data_splits_teacher_student.pkl')
+
+    path_model = '../../temp'
 
     list_feature_flatten, labels_integer, le, scaler = \
                 load_data_embedding_teacher_student(filename_feature_teacher=filename_feature_teacher,
@@ -88,7 +93,7 @@ if __name__ == '__main__':
     train_index, val_index = pickle.load(open(filename_data_splits, 'rb'))
     #
     # for train_index, val_index in folds5_split_indices:
-    if attention or dense or conv:
+    if attention or dense or conv or dropout:
         configs = [[2, 0]]  # attention
     else:
         configs = [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
@@ -122,7 +127,8 @@ if __name__ == '__main__':
                                       config=config,
                                       attention=attention,
                                       dense=dense,
-                                      conv=conv)
+                                      conv=conv,
+                                      dropout=dropout)
 
         # train_embedding_RNN(X_train=X_train,
         #                     X_val=X_val,

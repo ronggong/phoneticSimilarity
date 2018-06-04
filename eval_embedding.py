@@ -9,12 +9,12 @@ from scipy.spatial.distance import squareform
 from scipy.stats import spearmanr
 from sklearn.metrics import average_precision_score
 from sklearn.mixture import GaussianMixture
-from data_preparation import load_data_embedding
+from training_scripts.data_preparation import load_data_embedding
 from keras.models import load_model
 from keras.models import Model
-from models_RNN import model_select
-from parameters import config_select
-from data_preparation import feature_replication
+from training_scripts.models_RNN import model_select
+from src.parameters import config_select
+from training_scripts.data_preparation import feature_replication
 from src.audio_preprocessing import featureReshape
 
 

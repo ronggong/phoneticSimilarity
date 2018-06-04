@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 from eval_embedding import ground_truth_matrix
 # from eval_embedding import eval_embeddings
-from data_preparation import load_data_embedding_teacher_student
-from data_preparation import feature_replication_teacher_student
-from parameters import config_select
-from models_RNN import model_select
-from models_RNN import model_select_attention
+from training_scripts.data_preparation import load_data_embedding_teacher_student
+from training_scripts.data_preparation import feature_replication_teacher_student
+from src.parameters import config_select
+from training_scripts.models_RNN import model_select
+from training_scripts.models_RNN import model_select_attention
 from keras.models import load_model
 from keras.models import Model
 from keras.layers import Dense
@@ -19,8 +19,8 @@ from scipy.spatial.distance import squareform
 from src.audio_preprocessing import featureReshape
 from sklearn.metrics import average_precision_score
 from src.utilFunctions import get_unique_label
-from attention import Attention
-from attentionWithContext import AttentionWithContext
+from training_scripts.attention import Attention
+from training_scripts.attentionWithContext import AttentionWithContext
 
 from training_scripts.models_siamese_tripletloss import embedding_1_lstm_base
 from training_scripts.models_siamese_tripletloss import embedding_2_lstm_1_dense_base
@@ -37,7 +37,9 @@ def embedding_classifier_ap(filename_feature_teacher,
                             val_test,
                             MTL=False,
                             attention=False,
-                            dense=False):
+                            dense=False,
+                            conv=False,
+                            dropout=0.25):
     """calculate teacher student pairs average precision of classifier embedding"""
 
     list_feature_flatten_val, label_integer_val, le, scaler = \
@@ -54,8 +56,19 @@ def embedding_classifier_ap(filename_feature_teacher,
     # configs = [[2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [3, 3]]
 
     prefix = '_MTL' if MTL else '_2_class_teacher_student'
-    model_name = config_select(config) + prefix if embedding_dim == 32 else config_select(config)
-    attention_dense_str = 'dense_' if attention else ''
+    model_name = config_select(config) + prefix if embedding_dim == 2 or embedding_dim == 32 else config_select(config)
+    if dense and conv:
+        attention_dense_str = 'dense_conv_'
+    elif attention:
+        attention_dense_str = "attention_"
+    elif dense:
+        attention_dense_str = "dense_"
+    elif conv:
+        attention_dense_str = "conv_"
+    elif dropout:
+        attention_dense_str = "dropout_"
+    else:
+        attention_dense_str = ""
 
     list_ap = []
     # average precision of each phone
@@ -71,9 +84,9 @@ def embedding_classifier_ap(filename_feature_teacher,
 
         input_shape = [1, None, 80]
         if attention:
-            x, input, _ = model_select_attention(config=config, input_shape=input_shape)
+            x, input, _ = model_select_attention(config=config, input_shape=input_shape, conv=conv, dropout=dropout)
         else:
-            x, input = model_select(config=config, input_shape=input_shape)
+            x, input = model_select(config=config, input_shape=input_shape, conv=conv, dropout=dropout)
 
         if MTL:
             if dense:
@@ -89,7 +102,7 @@ def embedding_classifier_ap(filename_feature_teacher,
                                   loss_weights=[0.5, 0.5])
         else:
             if dense:
-                outputs = x
+                outputs = Dense(embedding_dim)(x)
             else:
                 outputs = Dense(embedding_dim, activation='softmax')(x)
             model_1_batch = Model(inputs=input, outputs=outputs)
@@ -398,10 +411,13 @@ if __name__ == '__main__':
                                 filename_list_key_student,
                                 filename_scaler,
                                 embedding_dim=32,
-                                config=[2, 0],
+                                config=[1, 0],
                                 val_test=val_test,
-                                MTL=True,
-                                attention=False)
+                                MTL=False,
+                                attention=False,
+                                dense=True,
+                                conv=True,
+                                dropout=False)
 
         # embedding_frame_ap(filename_feature_teacher,
         #                    filename_list_key_teacher,
