@@ -22,3 +22,8 @@ def get_unique_label(labels):
         if l not in label_unique:
             label_unique.append(l)
     return label_unique
+
+
+def ensure_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
