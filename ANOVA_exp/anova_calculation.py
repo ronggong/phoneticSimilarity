@@ -40,6 +40,8 @@ def feature_list_2_mat(root_phn_wav_path, sub_folders):
                     feature = feature[index_151_in_152]
                 else:
                     desc_name_final = desc_name
+                    print(desc_name_final)
+                    break
                 dict_feature[key].append(feature)
                 y[key].append(ii)
             print("loading {} {} feature out of {}, feature length {}, key {}".format(fn, jj, len(filenames_feature),
