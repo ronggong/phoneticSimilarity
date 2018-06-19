@@ -1,7 +1,7 @@
-'''
- * Copyright (C) 2017  Music Technology Group - Universitat Pompeu Fabra
+"""
+ * Copyright (C) 2018  Music Technology Group - Universitat Pompeu Fabra
  *
- * This file is part of jingjuSingingPhraseMatching
+ * This file is part of DLfM 2018 submission
  *
  * pypYIN is free software: you can redistribute it and/or modify it under
  * the terms of the GNU Affero General Public License as published by the Free
@@ -22,13 +22,14 @@
  *
  * If you want to refer this code, please use this article:
  *
-'''
+"""
+
+#########################
+# set this dataset path #
+#########################
 
 from os.path import join
 
-###################################
-###### set this dataset path ######
-###################################
 
 # dataset_path = '/Users/gong/Documents/MTG document/Jingju arias/jingju_a_cappella_singing_dataset/'
 # dataset_path = '/path/to/your/jingju_a_cappella_singing_dataset/'
@@ -36,6 +37,7 @@ from os.path import join
 
 cnn_file_name = 'gop_model'
 
+# primary dataset
 # primarySchool_dataset_root_path = '/Users/ronggong/Documents_using/MTG document/Jingju arias/primary_school_recording'
 primarySchool_dataset_root_path = '/media/gong/ec990efa-9ee0-4693-984b-29372dcea0d1/Data/RongGong/primary_school_recording'
 # primarySchool_dataset_root_path = '/Users/gong/Documents/MTG document/Jingju arias/primary_school_recording'

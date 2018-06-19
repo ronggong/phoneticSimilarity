@@ -475,5 +475,5 @@ if __name__ == '__main__':
 
     # getTeacherStudentRecordings()
     # getExtraTestRecordings()
-    getTeacherStudentAudio()
+    # getTeacherStudentAudio()
     getExtraTestAudio()

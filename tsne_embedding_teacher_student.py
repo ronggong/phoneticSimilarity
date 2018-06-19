@@ -25,22 +25,31 @@ def embedding_classifier_helper(configs,
                                 list_feature_flatten,
                                 scaler,
                                 label,
+                                dense=False,
                                 emb_all=False):
+
+    embedding_dim = 32 if dense else 2
     for config in configs:
-        embedding_dim = 2
         input_shape = [1, None, 80]
 
         prefix = '_MTL' if MTL else '_2_class_teacher_student'
-        model_name = config_select(config) + prefix if embedding_dim == 2 else config_select(config)
+        model_name = config_select(config) + prefix if embedding_dim == 2 or embedding_dim == 32 else config_select(config)
 
-        emb_all_str = "_all" if emb_all else ""
+        dense_str = "dense_32_" if dense else ""
+
+        if emb_all and dense:
+            emb_all_str = "_dense_all"
+        elif emb_all:
+            emb_all_str = "_all"
+        else:
+            emb_all_str = ""
 
         if le:
             # label encoder
             pickle.dump(le, open(os.path.join(path_eval, model_name + '_le.pkl'), 'wb'), protocol=2)
 
         for ii in range(1):
-            filename_model = os.path.join(path_model, model_name + '_' + str(ii) + '.h5')
+            filename_model = os.path.join(path_model, model_name + '_' + dense_str + str(ii) + '.h5')
             model = load_model(filepath=filename_model)
             weights = model.get_weights()
 
@@ -54,7 +63,10 @@ def embedding_classifier_helper(configs,
                                       loss='categorical_crossentropy',
                                       loss_weights=[0.5, 0.5])
             else:
-                outputs = Dense(embedding_dim, activation='softmax')(x)
+                if dense:
+                    outputs = Dense(embedding_dim)(x)
+                else:
+                    outputs = Dense(embedding_dim, activation='softmax')(x)
                 model_1_batch = Model(inputs=input, outputs=outputs)
 
                 model_1_batch.compile(optimizer='adam',
@@ -77,12 +89,12 @@ def embedding_classifier_helper(configs,
                 else:
                     embeddings_profess[ii_emb, :] = model_1_batch.predict_on_batch(x_batch)
 
-            np.save(file=os.path.join(path_eval, model_name + '_embedding_professionality' + emb_all_str + str(ii)),
+            np.save(file=os.path.join(path_eval, model_name + '_embedding_professionality' + dense_str + emb_all_str + str(ii)),
                     arr=embeddings_profess)
-            np.save(file=os.path.join(path_eval, model_name + '_embeddings_labels' + emb_all_str), arr=label)
+            np.save(file=os.path.join(path_eval, model_name + '_embeddings_labels' + dense_str + emb_all_str), arr=label)
 
             if MTL:
-                np.save(file=os.path.join(path_eval, model_name + '_embedding_pronunciation' + emb_all_str + str(ii)),
+                np.save(file=os.path.join(path_eval, model_name + '_embedding_pronunciation' + dense_str + emb_all_str + str(ii)),
                         arr=embeddings_pronun)
 
 
@@ -97,7 +109,8 @@ def embedding_classifier_tsne_all(filename_feature_teacher_train,
                                   filename_feature_student_extra_test,
                                   filename_list_key_extra_student,
                                   filename_scaler,
-                                  MTL):
+                                  MTL,
+                                  dense):
 
     list_feature_flatten, list_key_flatten, scaler = load_data_embedding_all(filename_feature_teacher_train,
                                                                              filename_feature_teacher_val,
@@ -124,7 +137,8 @@ def embedding_classifier_tsne_all(filename_feature_teacher_train,
                                 list_feature_flatten=list_feature_flatten,
                                 scaler=scaler,
                                 label=list_key_flatten,
-                                emb_all=True)
+                                emb_all=True,
+                                dense=dense)
 
 
 def embedding_classifier_tsne(filename_feature_teacher,
@@ -200,7 +214,8 @@ if __name__ == '__main__':
                                   filename_feature_student_extra_test,
                                   filename_list_key_extra_student,
                                   filename_scaler,
-                                  MTL=False)
+                                  MTL=False,
+                                  dense=True)
 
     # embedding_classifier_tsne(filename_feature_teacher_train,
     #                           filename_feature_teacher_val,
